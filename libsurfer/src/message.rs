@@ -140,6 +140,10 @@ pub enum Message {
         delta: f32,
         viewport_idx: usize,
     },
+    ZoomToCursor {
+        delta: f32,
+        viewport_idx: usize,
+    },
     ZoomToRange {
         start: BigInt,
         end: BigInt,

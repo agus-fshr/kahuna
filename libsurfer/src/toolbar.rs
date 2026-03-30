@@ -394,6 +394,11 @@ impl SystemState {
             .waves
             .as_ref()
             .map_or(0, |waves| waves.last_active_viewport_idx);
+        let cursor_set = self
+            .user
+            .waves
+            .as_ref()
+            .is_some_and(|waves| waves.cursor.is_some());
         add_toolbar_button(
             ui,
             msgs,
@@ -417,6 +422,17 @@ impl SystemState {
                 viewport_idx,
             },
             wave_loaded,
+        );
+        add_toolbar_button(
+            ui,
+            msgs,
+            icons::TARGET_FILL,
+            "Zoom in on cursor",
+            Message::ZoomToCursor {
+                delta: 0.5,
+                viewport_idx,
+            },
+            wave_loaded && cursor_set,
         );
         add_toolbar_button(
             ui,
