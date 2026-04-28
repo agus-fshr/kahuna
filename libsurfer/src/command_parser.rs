@@ -16,7 +16,7 @@ use crate::wave_source::LoadOptions;
 use crate::{
     SystemState,
     clock_highlighting::ClockHighlightType,
-    displayed_item::DisplayedItem,
+    displayed_item::{AnalogRenderStyle, AnalogSettings, DisplayedItem},
     message::Message,
     toolbar::toolbar_group_specs,
     util::{alpha_idx_to_uint_idx, uint_idx_to_alpha_idx},
@@ -160,7 +160,14 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
         .into_iter()
         .map(&str::to_owned)
         .collect();
-
+    let height_suggestions = state
+        .user
+        .config
+        .layout
+        .waveforms_line_height_multiples
+        .iter()
+        .map(ToString::to_string)
+        .collect_vec();
     let active_scope = state
         .user
         .waves
@@ -279,6 +286,8 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
             "item_set_color",
             "item_set_background_color",
             "item_set_format",
+            "item_set_height",
+            "item_set_analog",
             "item_unset_color",
             "item_unset_background_color",
             "item_unfocus",
@@ -766,10 +775,6 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
                         )))
                     }),
                 ),
-                "item_unset_color" => Some(Command::Terminal(Message::ItemColorChange(
-                    MessageTarget::CurrentSelection,
-                    None,
-                ))),
                 "item_set_format" => single_word(
                     format_names.clone(),
                     Box::new(|word| {
@@ -779,6 +784,46 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
                         )))
                     }),
                 ),
+                "item_set_height" => single_word(
+                    height_suggestions.clone(),
+                    Box::new(|word| {
+                        let height = word.parse::<f32>().ok()?;
+                        Some(Command::Terminal(Message::ItemHeightScalingFactorChange(
+                            MessageTarget::CurrentSelection,
+                            height,
+                        )))
+                    }),
+                ),
+                "item_set_analog" => single_word(
+                    vec![
+                        "off".to_string(),
+                        "step".to_string(),
+                        "interpolated".to_string(),
+                    ],
+                    Box::new(|word| {
+                        let settings = match word {
+                            "off" => None,
+                            "step" => Some(AnalogSettings {
+                                render_style: AnalogRenderStyle::Step,
+                                ..Default::default()
+                            }),
+                            "interpolated" => Some(AnalogSettings {
+                                render_style: AnalogRenderStyle::Interpolated,
+                                ..Default::default()
+                            }),
+                            _ => return None,
+                        };
+
+                        Some(Command::Terminal(Message::SetAnalogSettings(
+                            MessageTarget::CurrentSelection,
+                            settings,
+                        )))
+                    }),
+                ),
+                "item_unset_color" => Some(Command::Terminal(Message::ItemColorChange(
+                    MessageTarget::CurrentSelection,
+                    None,
+                ))),
                 "item_unset_background_color" => Some(Command::Terminal(
                     Message::ItemBackgroundColorChange(MessageTarget::CurrentSelection, None),
                 )),
