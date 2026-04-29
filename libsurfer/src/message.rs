@@ -354,11 +354,22 @@ pub enum Message {
         name: Option<String>,
         move_focus: bool,
     },
+    // Resolve a marker name or `#id` at execution time, then set or create the marker.
+    // FIXME Resolving by `#id` does not work as expected; characters after a `#` are
+    // stripped as comments before being parsed.
+    ResolveMarkerSet {
+        name: String,
+        time: BigInt,
+    },
     /// Set a marker at a specific position. If it doesn't exist, it will be created
     SetMarker {
         id: u8,
         time: BigInt,
     },
+    // Resolve a marker name or `#id` at execution time, then remove the marker if it exists.
+    // FIXME Resolving by `#id` does not work as expected; characters after a `#` are
+    // stripped as comments before being parsed.
+    ResolveMarkerRemove(String),
     /// Remove marker.
     RemoveMarker(u8),
     /// Set or move a marker to the position of the current cursor.

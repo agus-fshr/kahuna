@@ -1621,6 +1621,18 @@ impl SystemState {
                 self.user.trace_style = Some(trace_style);
                 self.invalidate_draw_commands();
             }
+            Message::ResolveMarkerSet { name, time } => {
+                let marker_id = self.user.waves.as_ref()?.resolve_marker_name(&name);
+                let msg = match marker_id {
+                    Some(id) => Message::SetMarker { id, time },
+                    None => Message::AddMarker {
+                        time,
+                        name: Some(name),
+                        move_focus: true,
+                    },
+                };
+                self.update(msg);
+            }
             Message::AddMarker {
                 time,
                 name,
@@ -1638,6 +1650,11 @@ impl SystemState {
                 self.save_current_canvas(format!("Set marker {id} to {time}"));
                 let waves = self.user.waves.as_mut()?;
                 waves.set_marker_position(id, &time);
+            }
+            Message::ResolveMarkerRemove(name) => {
+                if let Some(id) = self.user.waves.as_ref()?.resolve_marker_name(&name) {
+                    self.update(Message::RemoveMarker(id));
+                }
             }
             Message::RemoveMarker(id) => {
                 let waves = self.user.waves.as_mut()?;

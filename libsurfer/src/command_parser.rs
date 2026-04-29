@@ -1146,7 +1146,6 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
                     // marker_suggestions(&markers),
                     vec![],
                     Box::new(move |name, _| {
-                        let marker_id = parse_marker(name, &markers);
                         let name = name.to_owned();
 
                         Some(Command::NonTerminal(
@@ -1154,16 +1153,10 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
                             vec![],
                             Box::new(move |time_str, _| {
                                 let time = time_str.parse().ok()?;
-                                match marker_id {
-                                    Some(id) => {
-                                        Some(Command::Terminal(Message::SetMarker { id, time }))
-                                    }
-                                    None => Some(Command::Terminal(Message::AddMarker {
-                                        time,
-                                        name: Some(name.clone()),
-                                        move_focus: true,
-                                    })),
-                                }
+                                Some(Command::Terminal(Message::ResolveMarkerSet {
+                                    name: name.clone(),
+                                    time,
+                                }))
                             }),
                         ))
                     }),
@@ -1220,8 +1213,9 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
                     ParamGreed::Rest,
                     marker_suggestions(&markers),
                     Box::new(move |name, _| {
-                        let marker_id = parse_marker(name, &markers)?;
-                        Some(Command::Terminal(Message::RemoveMarker(marker_id)))
+                        Some(Command::Terminal(Message::ResolveMarkerRemove(
+                            name.to_owned(),
+                        )))
                     }),
                 )),
                 "show_marker_window" => {

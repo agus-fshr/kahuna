@@ -24,6 +24,19 @@ const MAX_MARKER_INDEX: u8 = 254;
 const CURSOR_MARKER_IDX: u8 = 255;
 
 impl WaveData {
+    pub fn resolve_marker_name(&self, name: &str) -> Option<u8> {
+        if let Some(id_str) = name.strip_prefix('#') {
+            return id_str.parse::<u8>().ok();
+        }
+
+        self.displayed_items.values().find_map(|item| match item {
+            DisplayedItem::Marker(marker) if marker.name.as_deref() == Some(name) => {
+                Some(marker.idx)
+            }
+            _ => None,
+        })
+    }
+
     /// Get the color for a marker by its index, falling back to cursor color if not found
     fn get_marker_color(&self, idx: u8, theme: &SurferTheme) -> Color32 {
         self.items_tree

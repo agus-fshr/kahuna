@@ -2797,6 +2797,96 @@ snapshot_ui!(command_file_in_command_file_works, || {
     state
 });
 
+snapshot_ui!(marker_set_then_remove_by_name, || {
+    let wave_path = get_project_root()
+        .unwrap()
+        .join("examples/counter.vcd")
+        .try_into()
+        .unwrap();
+    let mut state = SystemState::new_default_config()
+        .unwrap()
+        .with_params(StartupParams {
+            waves: Some(WaveSource::File(wave_path)),
+            wcp_initiate: None,
+            startup_commands: vec![],
+        });
+
+    wait_for_waves_fully_loaded(&mut state, 10);
+
+    state.add_batch_commands(vec![
+        "marker_set m0 2000".to_string(),
+        "marker_remove m0".to_string(),
+    ]);
+    wait_for_waves_fully_loaded(&mut state, 10);
+    state.update(Message::SetCursorWindowVisible(true));
+
+    state
+});
+
+// FIXME Known to produce unexpected results (does not remove marker)
+// as characters after a # are stripped as comments from batch commands
+// before reaching marker parser.
+snapshot_ui!(marker_set_then_remove_by_number, || {
+    let wave_path = get_project_root()
+        .unwrap()
+        .join("examples/counter.vcd")
+        .try_into()
+        .unwrap();
+    let mut state = SystemState::new_default_config()
+        .unwrap()
+        .with_params(StartupParams {
+            waves: Some(WaveSource::File(wave_path)),
+            wcp_initiate: None,
+            startup_commands: vec![],
+        });
+
+    wait_for_waves_fully_loaded(&mut state, 10);
+
+    state.add_batch_commands(vec![
+        "marker_set m0 2000".to_string(),
+        "marker_set m1 4000".to_string(),
+        "marker_remove #0".to_string(),
+    ]);
+    wait_for_waves_fully_loaded(&mut state, 10);
+    state.update(Message::SetCursorWindowVisible(true));
+
+    state
+});
+
+snapshot_ui!(
+    marker_remove_then_readd_does_not_create_default_marker,
+    || {
+        let wave_path = get_project_root()
+            .unwrap()
+            .join("examples/counter.vcd")
+            .try_into()
+            .unwrap();
+        let mut state = SystemState::new_default_config()
+            .unwrap()
+            .with_params(StartupParams {
+                waves: Some(WaveSource::File(wave_path)),
+                wcp_initiate: None,
+                startup_commands: vec![],
+            });
+
+        wait_for_waves_fully_loaded(&mut state, 10);
+
+        state.add_batch_commands(vec!["marker_set m0 2000".to_string()]);
+        wait_for_waves_fully_loaded(&mut state, 10);
+
+        state.add_batch_commands(vec![
+            "marker_remove m0".to_string(),
+            "marker_set m0 3000".to_string(),
+            "marker_remove m0".to_string(),
+            "marker_set m0 4000".to_string(),
+        ]);
+        wait_for_waves_fully_loaded(&mut state, 10);
+        state.update(Message::SetCursorWindowVisible(true));
+
+        state
+    }
+);
+
 #[cfg(feature = "wasm_plugins")]
 snapshot_ui_with_file_and_msgs! {wasm_translator_works, "examples/picorv32.vcd", [
     Message::SetSidePanelVisible(true),
