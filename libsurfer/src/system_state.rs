@@ -30,6 +30,11 @@ use crate::{
 #[cfg(feature = "performance_plot")]
 use crate::benchmark::Timing;
 
+pub struct MemoryViewerState {
+    pub open: bool,
+    pub variable: Option<VariableRef>,
+}
+
 pub struct SystemState {
     pub user: UserState,
     pub(crate) file_history: FileHistory,
@@ -108,7 +113,7 @@ pub struct SystemState {
     pub(crate) frame_buffer_content: Option<FrameBufferContent>,
     pub(crate) frame_buffer_array_cache: Option<FrameBufferArrayCache>,
     pub(crate) frame_buffer_pixel_cache: Option<FrameBufferPixelCache>,
-
+    pub(crate) memory_viewer: MemoryViewerState,
     // Benchmarking stuff
     /// Invalidate draw commands every frame to make performance comparison easier
     pub(crate) continuous_redraw: bool,
@@ -194,6 +199,10 @@ impl SystemState {
             frame_buffer_content: None,
             frame_buffer_array_cache: None,
             frame_buffer_pixel_cache: None,
+            memory_viewer: MemoryViewerState {
+                open: false,
+                variable: None,
+            },
 
             url_callback: None,
             continuous_redraw: false,

@@ -729,6 +729,11 @@ impl SystemState {
             if ui.button("Show frame buffer").clicked() {
                 msgs.push(Message::SetFrameBufferVisibleVariable(Some(vidx)));
             }
+            if let DisplayedItem::Variable(variable) = clicked_item {
+                if ui.button("Open in Memory Viewer").clicked() {
+                    msgs.push(Message::OpenMemoryViewer(variable.variable_ref.clone()));
+                }
+            }
             ui.menu_button("Copy", |ui| {
                 if waves.cursor.is_some() && ui.button("Value").clicked() {
                     msgs.push(Message::VariableValueToClipbord(MessageTarget::Explicit(

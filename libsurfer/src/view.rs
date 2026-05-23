@@ -325,8 +325,10 @@ impl SystemState {
         }
 
         if self.frame_buffer_content.is_some() {
-            self.draw_frame_buffer_window(ui, &mut msgs);
+            self.draw_frame_buffer_window(ui.ctx(), &mut msgs);
         }
+
+        self.draw_memory_viewer_window(ui.ctx(), &mut msgs);
 
         if let Some(dialog) = self.user.show_reload_suggestion {
             draw_reload_waveform_dialog(ui, dialog, &mut msgs);
