@@ -730,7 +730,7 @@ impl SystemState {
                 msgs.push(Message::SetFrameBufferVisibleVariable(Some(vidx)));
             }
             if let DisplayedItem::Variable(variable) = clicked_item {
-                if ui.button("Open in Memory Viewer").clicked() {
+                if ui.button("Show Memory Viewer").clicked() {
                     msgs.push(Message::OpenMemoryViewer(variable.variable_ref.clone()));
                 }
             }

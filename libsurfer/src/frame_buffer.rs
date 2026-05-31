@@ -577,7 +577,7 @@ fn resolve_leaf_scopes_and_variables(
 
     Some(sorted_variables)
 }
-fn resolve_structured_array_entries(
+pub(crate) fn resolve_structured_array_entries(
     wave_container: &WaveContainer,
     scope_ref: &ScopeRef,
     levels: &[ArrayLevel],

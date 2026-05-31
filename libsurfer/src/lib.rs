@@ -606,11 +606,26 @@ impl SystemState {
                     level.first_index = clamped_first;
                     level.last_index = clamped_last;
                 }
-
+            }
             Message::OpenMemoryViewer(variable_ref) => {
+                let waves = self.user.waves.as_mut()?;
+                let wave_container = waves.inner.as_waves()?;
+
+                let sibling_variables = wave_container.variables_in_scope(&variable_ref.path);
+
+                if let Some(cmd) = waves
+                    .inner
+                    .as_waves_mut()?
+                    .load_variables(sibling_variables.iter())
+                    .map_err(|e| error!("{e:#?}"))
+                    .ok()
+                    .flatten()
+                {
+                    self.load_variables(cmd);
+                }
+
                 self.memory_viewer.open = true;
                 self.memory_viewer.variable = Some(variable_ref);
-
             }
             Message::SetCursorWindowVisible(visibility) => {
                 self.user.show_cursor_window = visibility;

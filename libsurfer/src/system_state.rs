@@ -1,3 +1,5 @@
+use crate::memory_viewer::MemoryViewerFormat;
+use egui::{Pos2, Rect};
 use eyre::Result;
 use num::BigInt;
 use std::{
@@ -5,10 +7,8 @@ use std::{
     collections::{HashMap, VecDeque},
     sync::{Arc, atomic::AtomicBool},
 };
-use tokio::task::JoinHandle;
-
-use egui::{Pos2, Rect};
 use surfer_translation_types::translator::VariableNameInfo;
+use tokio::task::JoinHandle;
 
 use std::rc::Rc;
 
@@ -33,6 +33,11 @@ use crate::benchmark::Timing;
 pub struct MemoryViewerState {
     pub open: bool,
     pub variable: Option<VariableRef>,
+    pub jump_to_index: String,
+    pub search_value: String,
+    pub index_format: MemoryViewerFormat,
+    pub value_format: MemoryViewerFormat,
+    pub scroll_to_row: Option<usize>,
 }
 
 pub struct SystemState {
@@ -202,6 +207,11 @@ impl SystemState {
             memory_viewer: MemoryViewerState {
                 open: false,
                 variable: None,
+                jump_to_index: String::new(),
+                search_value: String::new(),
+                index_format: MemoryViewerFormat::Decimal,
+                value_format: MemoryViewerFormat::Decimal,
+                scroll_to_row: None,
             },
 
             url_callback: None,
