@@ -321,7 +321,10 @@ pub enum Message {
     SetFrameBufferWidth(usize),
     SetFrameBufferRange(Vec<(i64, i64)>),
     SetMouseGestureDragStart(Option<Pos2>, Option<BigInt>),
-    OpenMemoryViewer(VariableRef),
+    OpenMemoryViewer {
+        scope: ScopeRef,
+        name: Option<String>,
+    },
     SetMeasureDragStart(Option<Pos2>),
     /// Set or clear focus state for a widget identified by id string.
     SetTextEditFocused(String, bool),

@@ -541,13 +541,21 @@ impl SystemState {
             if ui.button("Add scope as group recursively").clicked() {
                 msgs.push(Message::AddScopeAsGroup(scope.clone(), true));
             }
-            if wave
+
+            let is_array_scope = wave
                 .inner
                 .as_waves()
-                .is_some_and(|wc| wc.scope_is_array(scope))
-                && ui.button("Show frame buffer").clicked()
-            {
+                .is_some_and(|wc| wc.scope_is_array(scope));
+
+            if is_array_scope && ui.button("Show frame buffer").clicked() {
                 msgs.push(Message::SetFrameBufferArray(scope.clone()));
+            }
+
+            if is_array_scope && ui.button("Show Memory Viewer").clicked() {
+                msgs.push(Message::OpenMemoryViewer {
+                    scope: scope.clone(),
+                    name: Some(scope.name()),
+                });
             }
         });
         response.clicked().then(|| {

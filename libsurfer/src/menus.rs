@@ -724,15 +724,18 @@ impl SystemState {
             }
             msgs.push(Message::RemoveVisibleItems(group_target));
         }
-        if path.is_some() {
+        if let Some(path) = path {
             // Actual signal. Not one of: divider, timeline, marker.
             if ui.button("Show frame buffer").clicked() {
                 msgs.push(Message::SetFrameBufferVisibleVariable(Some(vidx)));
             }
-            if let DisplayedItem::Variable(variable) = clicked_item {
-                if ui.button("Show Memory Viewer").clicked() {
-                    msgs.push(Message::OpenMemoryViewer(variable.variable_ref.clone()));
-                }
+            if let DisplayedItem::Variable(_) = clicked_item
+                && ui.button("Show Memory Viewer").clicked()
+            {
+                msgs.push(Message::OpenMemoryViewer {
+                    scope: path.root.path.clone(),
+                    name: Some(path.root.name.clone()),
+                });
             }
             ui.menu_button("Copy", |ui| {
                 if waves.cursor.is_some() && ui.button("Value").clicked() {

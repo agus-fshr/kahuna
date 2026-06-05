@@ -23,7 +23,7 @@ use crate::{
     state::UserState,
     time::TimeInputState,
     translation::{TranslatorList, all_translators},
-    wave_container::VariableRef,
+    wave_container::{ScopeRef, VariableRef},
     wave_source::{LoadOptions, LoadProgress},
 };
 
@@ -32,7 +32,8 @@ use crate::benchmark::Timing;
 
 pub struct MemoryViewerState {
     pub open: bool,
-    pub variable: Option<VariableRef>,
+    pub scope: Option<ScopeRef>,
+    pub name: Option<String>,
     pub jump_to_index: String,
     pub search_value: String,
     pub index_format: MemoryViewerFormat,
@@ -206,7 +207,8 @@ impl SystemState {
             frame_buffer_pixel_cache: None,
             memory_viewer: MemoryViewerState {
                 open: false,
-                variable: None,
+                scope: None,
+                name: None,
                 jump_to_index: String::new(),
                 search_value: String::new(),
                 index_format: MemoryViewerFormat::Decimal,

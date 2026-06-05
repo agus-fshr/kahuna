@@ -91,11 +91,7 @@ pub(crate) struct FrameBufferContentCacheKey {
     pub content: FrameBufferContent,
     pub cursor_position: num::BigUint,
 }
-#[derive(Debug, Clone)]
-pub(crate) struct StructuredArrayEntry {
-    pub coordinates: Vec<i64>,
-    pub variable_ref: VariableRef,
-}
+
 #[derive(Debug, Clone)]
 pub(crate) struct FrameBufferArrayCache {
     pub key: FrameBufferContentCacheKey,
@@ -576,83 +572,6 @@ fn resolve_leaf_scopes_and_variables(
     }
 
     Some(sorted_variables)
-}
-pub(crate) fn resolve_structured_array_entries(
-    wave_container: &WaveContainer,
-    scope_ref: &ScopeRef,
-    levels: &[ArrayLevel],
-) -> Option<Vec<StructuredArrayEntry>> {
-    let (scope_levels, var_level) = levels.split_at(levels.len() - 1);
-    let var_level = &var_level[0];
-
-    let mut current_scopes: Vec<(ScopeRef, Vec<i64>)> = vec![(scope_ref.clone(), Vec::new())];
-
-    for level in scope_levels {
-        let clamped_first = level.first_index.clamp(level.min_index, level.max_index);
-        let clamped_last = level.last_index.clamp(level.min_index, level.max_index);
-
-        let mut next_scopes = Vec::new();
-
-        for (scope, coordinates) in &current_scopes {
-            let mut selected: Vec<ScopeRef> = wave_container
-                .child_scopes(scope)
-                .unwrap_or_default()
-                .into_iter()
-                .filter(|s| {
-                    let idx = scope_array_index(s);
-                    idx >= clamped_first && idx <= clamped_last
-                })
-                .collect();
-
-            selected.sort_by_key(scope_array_index);
-
-            for child in selected {
-                let mut child_coordinates = coordinates.clone();
-                child_coordinates.push(scope_array_index(&child));
-                next_scopes.push((child, child_coordinates));
-            }
-        }
-
-        current_scopes = next_scopes;
-    }
-
-    if current_scopes.is_empty() {
-        return None;
-    }
-
-    let clamped_first = var_level
-        .first_index
-        .clamp(var_level.min_index, var_level.max_index);
-    let clamped_last = var_level
-        .last_index
-        .clamp(var_level.min_index, var_level.max_index);
-
-    if clamped_first > clamped_last {
-        return None;
-    }
-
-    let mut entries = Vec::new();
-
-    for (leaf_scope, coordinates) in &current_scopes {
-        let mut variables = wave_container.variables_in_scope(leaf_scope);
-        variables.sort_by_key(variable_array_index);
-
-        for variable_ref in variables {
-            let idx = variable_array_index(&variable_ref);
-
-            if idx >= clamped_first && idx <= clamped_last {
-                let mut full_coordinates = coordinates.clone();
-                full_coordinates.push(idx);
-
-                entries.push(StructuredArrayEntry {
-                    coordinates: full_coordinates,
-                    variable_ref,
-                });
-            }
-        }
-    }
-
-    Some(entries)
 }
 /// Analyses the scope hierarchy rooted at `scope_ref` and returns:
 /// - `levels`: one `ArrayLevel` per nesting level, where the last level is for variables

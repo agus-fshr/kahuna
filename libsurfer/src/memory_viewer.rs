@@ -1,5 +1,4 @@
-use crate::frame_buffer::{build_frame_buffer_content, resolve_structured_array_entries};
-use crate::{Message, system_state::SystemState};
+use crate::{Message, system_state::SystemState, wave_container::ScopeRefExt};
 use egui_extras::{Column, TableBuilder};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -71,12 +70,18 @@ impl SystemState {
             .show(ctx, |ui| {
                 ui.heading("Memory Viewer");
 
-                let Some(variable) = self.memory_viewer.variable.clone() else {
+                let Some(scope) = self.memory_viewer.scope.clone() else {
                     ui.label("No variable selected");
                     return;
                 };
 
-                ui.label(format!("Variable: {}", variable.name));
+                let display_name = self
+                    .memory_viewer
+                    .name
+                    .clone()
+                    .unwrap_or_else(|| scope.name());
+
+                ui.label(format!("Variable: {display_name}"));
 
                 let Some(waves) = &self.user.waves else {
                     ui.label("No waveform loaded");
@@ -96,18 +101,9 @@ impl SystemState {
                     return;
                 };
 
-                let structured_entries = build_frame_buffer_content(wave_container, &variable.path)
-                    .and_then(|(levels, _vars)| {
-                        resolve_structured_array_entries(wave_container, &variable.path, &levels)
-                    });
-
-                if let Some(entries) = &structured_entries {
-                    ui.label(format!("Structured entries: {}", entries.len()));
-                }
-
                 let mut rows = Vec::new();
 
-                let mut variables = wave_container.variables_in_scope(&variable.path);
+                let mut variables = wave_container.variables_in_scope(&scope);
                 variables.sort_by_key(|v| v.index.unwrap_or(i64::MAX));
 
                 for var_ref in variables {
@@ -131,6 +127,8 @@ impl SystemState {
 
                     rows.push((index, value.to_string()));
                 }
+
+                ui.label(format!("Structured entries: {}", rows.len()));
 
                 ui.separator();
 
@@ -181,14 +179,6 @@ impl SystemState {
                 let mut jump_requested = false;
 
                 ui.horizontal(|ui| {
-                    ui.label("Search value:");
-                    ui.add_sized(
-                        [90.0, 20.0],
-                        egui::TextEdit::singleline(&mut self.memory_viewer.search_value),
-                    );
-
-                    ui.separator();
-
                     ui.label("Jump to index:");
                     ui.add_sized(
                         [60.0, 20.0],
@@ -198,6 +188,14 @@ impl SystemState {
                     if ui.button("Jump").clicked() {
                         jump_requested = true;
                     }
+
+                    ui.label("Search value:");
+                    ui.add_sized(
+                        [90.0, 20.0],
+                        egui::TextEdit::singleline(&mut self.memory_viewer.search_value),
+                    );
+
+                    ui.separator();
                 });
 
                 ui.separator();
@@ -218,13 +216,12 @@ impl SystemState {
                     })
                     .collect();
 
-                if jump_requested {
-                    if let Ok(target_index) = self.memory_viewer.jump_to_index.trim().parse::<i64>()
-                    {
-                        self.memory_viewer.scroll_to_row = visible_rows
-                            .iter()
-                            .position(|(index, _)| *index == target_index);
-                    }
+                if jump_requested
+                    && let Ok(target_index) = self.memory_viewer.jump_to_index.trim().parse::<i64>()
+                {
+                    self.memory_viewer.scroll_to_row = visible_rows
+                        .iter()
+                        .position(|(index, _)| *index == target_index);
                 }
 
                 let max_index = rows.iter().map(|(index, _)| *index).max().unwrap_or(0);
@@ -250,12 +247,12 @@ impl SystemState {
                 }
 
                 table
-                    .header(20.0, |mut header| {
+                    .header(24.0, |mut header| {
                         header.col(|ui| {
-                            ui.strong("Index");
+                            ui.monospace("Index");
                         });
                         header.col(|ui| {
-                            ui.strong("Value");
+                            ui.monospace("Value");
                         });
                     })
                     .body(|body| {
@@ -264,7 +261,7 @@ impl SystemState {
                             let (index, value) = visible_rows[row_index];
 
                             row.col(|ui| {
-                                ui.label(format_index(
+                                ui.monospace(format_index(
                                     *index,
                                     self.memory_viewer.index_format,
                                     max_index,
@@ -272,7 +269,7 @@ impl SystemState {
                             });
 
                             row.col(|ui| {
-                                ui.label(format_value(value, self.memory_viewer.value_format));
+                                ui.monospace(format_value(value, self.memory_viewer.value_format));
                             });
                         });
                     });
