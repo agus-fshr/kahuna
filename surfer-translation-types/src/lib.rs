@@ -358,6 +358,9 @@ pub enum VariableType {
     StdULogic,
     #[display("std_ulogic_vector")]
     StdULogicVector,
+
+    #[display("event")]
+    EventParameter,
 }
 
 #[derive(Clone, Display, Copy, PartialOrd, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -385,7 +388,6 @@ pub enum VariableEncoding {
     String,
     Real,
     BitVector,
-    Event,
 }
 
 #[cfg(test)]

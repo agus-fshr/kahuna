@@ -41,7 +41,10 @@ impl<VarId, ScopeId> VariableMeta<VarId, ScopeId> {
 
     /// Variable corresponds to events
     pub fn is_event(&self) -> bool {
-        matches!(self.encoding, VariableEncoding::Event)
+        matches!(
+            self.variable_type,
+            Some(VariableType::VCDEvent | VariableType::EventParameter)
+        )
     }
 
     /// Variable has real encoding

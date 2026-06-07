@@ -25,7 +25,7 @@ use crate::time::TimeFormat;
 use crate::trace_style::TraceStyle;
 use crate::wave_container::VariableMeta;
 use crate::{clock_highlighting::ClockHighlightType, variable_name_type::VariableNameType};
-use surfer_translation_types::VariableEncoding;
+use surfer_translation_types::{VariableEncoding, VariableType};
 
 macro_rules! theme {
     ($name:expr) => {
@@ -914,9 +914,15 @@ impl VariableIcons {
             return (&self.other, self.colors.other);
         };
 
+        if matches!(
+            meta.variable_type,
+            Some(VariableType::VCDEvent | VariableType::EventParameter)
+        ) {
+            return (&self.event, self.colors.event);
+        }
+
         match meta.encoding {
             VariableEncoding::String => (&self.string, self.colors.string),
-            VariableEncoding::Event => (&self.event, self.colors.event),
             VariableEncoding::Real => (&self.other, self.colors.other),
             VariableEncoding::BitVector => match meta.num_bits {
                 Some(1) => (&self.wire, self.colors.wire),

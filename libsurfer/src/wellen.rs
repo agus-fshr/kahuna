@@ -138,10 +138,14 @@ impl WellenContainer {
     ) -> Self {
         // generate a list of names for all variables and scopes since they will be requested by the parser
         let h = &hierarchy;
-        let scopes = h.all_scopes().map(|r| r.full_name(h)).collect::<Vec<_>>();
+        let scopes = h
+            .all_scopes()
+            .map(|r| h[r].full_name(h))
+            .collect::<Vec<_>>();
         let vars: Vec<String> = h
             .all_vars()
             .map(|r| {
+                let r = &h[r];
                 if let Some(i) = r.index()
                     && i.width() == 1
                 {
@@ -156,7 +160,8 @@ impl WellenContainer {
             .enumerate()
             .filter_map(|(n, name)| {
                 let r = VarRef::from_index(n).unwrap();
-                if h[r].var_type().is_parameter() {
+                let var = &h[r];
+                if var.var_type().is_parameter() {
                     None
                 } else {
                     Some(VariableRef::from_hierarchy_string_with_id(
@@ -479,8 +484,9 @@ impl WellenContainer {
         let h = &self.hierarchy;
         let params = h
             .all_vars()
+            .map(|r| &h[r])
             .filter(|r| r.var_type().is_parameter())
-            .map(wellen::Var::signal_ref)
+            .map(|r| r.signal_ref())
             .collect::<Vec<_>>();
         Ok(self.load_signals(&params))
     }
@@ -746,8 +752,6 @@ impl WellenContainer {
             SignalEncoding::String => VariableEncoding::String,
             SignalEncoding::Real => VariableEncoding::Real,
             SignalEncoding::BitVector(_) => VariableEncoding::BitVector,
-            SignalEncoding::Event => VariableEncoding::Event,
-            SignalEncoding::Unknown => unreachable!("should never get an unknown signal encoding"),
         };
         Ok(VariableMeta {
             var: variable.clone(),
@@ -901,6 +905,7 @@ impl FromVarType for VariableType {
             VarType::StdULogic => VariableType::StdULogic,
             VarType::StdULogicVector => VariableType::StdULogicVector,
             VarType::RealParameter => VariableType::RealParameter,
+            VarType::EventParameter => VariableType::EventParameter,
         }
     }
 }
@@ -944,6 +949,7 @@ impl ToVarType for VariableType {
             VariableType::StdULogic => VarType::StdULogic,
             VariableType::StdULogicVector => VarType::StdULogicVector,
             VariableType::RealParameter => VarType::RealParameter,
+            VariableType::EventParameter => VarType::EventParameter,
             VariableType::RealTime => VarType::RealTime,
         }
     }

@@ -114,7 +114,7 @@ wasm-bindgen-futures = "0.4.70"
 wasm-tracing = "2.1"
 web-sys = { version = "= 0.3.97", features = ["Location", "Navigator", "UrlSearchParams", "Window"] }
 web-time = "1.1.0"
-wellen = { version = "0.21.0", features = ["serde1"] }
+wellen = { version = "0.25.2", features = ["serde1"] }
 whoami = "2"
 
 [profile.release]
