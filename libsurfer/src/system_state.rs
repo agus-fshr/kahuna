@@ -37,7 +37,7 @@ pub struct MemoryViewerState {
     pub jump_to_index: String,
     pub search_value: String,
     pub index_format: MemoryViewerFormat,
-    pub value_format: MemoryViewerFormat,
+    pub value_format: String,
     pub scroll_to_row: Option<usize>,
 }
 
@@ -212,7 +212,7 @@ impl SystemState {
                 jump_to_index: String::new(),
                 search_value: String::new(),
                 index_format: MemoryViewerFormat::Decimal,
-                value_format: MemoryViewerFormat::Decimal,
+                value_format: "Hexadecimal".to_string(),
                 scroll_to_row: None,
             },
 

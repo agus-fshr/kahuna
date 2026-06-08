@@ -1,5 +1,10 @@
-use crate::{Message, system_state::SystemState, wave_container::ScopeRefExt};
+use crate::{
+    Message, system_state::SystemState, translation::TranslationResultExt,
+    wave_container::ScopeRefExt,
+};
+
 use egui_extras::{Column, TableBuilder};
+use surfer_translation_types::{TranslationPreference, Translator};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum MemoryViewerFormat {
@@ -35,18 +40,6 @@ fn format_index(index: i64, format: MemoryViewerFormat, max_index: i64) -> Strin
     }
 }
 
-fn format_value(value: &str, format: MemoryViewerFormat) -> String {
-    let Ok(parsed) = value.parse::<u64>() else {
-        return value.to_string();
-    };
-
-    match format {
-        MemoryViewerFormat::Decimal => parsed.to_string(),
-        MemoryViewerFormat::Hexadecimal => format!("{:x}", parsed),
-        MemoryViewerFormat::Binary => format!("{:b}", parsed),
-    }
-}
-
 fn parse_index_from_name(name: &str) -> Option<i64> {
     name.trim()
         .trim_start_matches('[')
@@ -62,7 +55,8 @@ impl SystemState {
         }
 
         let mut open = self.memory_viewer.open;
-
+        let translator_name = self.memory_viewer.value_format.clone();
+        let translator = self.translators.get_translator(&translator_name);
         egui::Window::new("Memory Viewer")
             .open(&mut open)
             .resizable(true)
@@ -106,7 +100,7 @@ impl SystemState {
                 let mut variables = wave_container.variables_in_scope(&scope);
                 variables.sort_by_key(|v| v.index.unwrap_or(i64::MAX));
 
-                for var_ref in variables {
+                for var_ref in &variables {
                     let Some(index) = var_ref
                         .index
                         .or_else(|| parse_index_from_name(&var_ref.name))
@@ -125,7 +119,26 @@ impl SystemState {
                         continue;
                     };
 
-                    rows.push((index, value.to_string()));
+                    // rows.push((index, value.to_string()));
+                    let display_value = wave_container
+                        .variable_meta(&var_ref)
+                        .ok()
+                        .and_then(|meta| {
+                            translator.translate(&meta, &value).ok().and_then(|result| {
+                                result
+                                    .format_flat(
+                                        &Some(translator_name.clone()),
+                                        &[],
+                                        &self.translators,
+                                    )
+                                    .into_iter()
+                                    .next()
+                                    .and_then(|formatted| formatted.value.map(|value| value.value))
+                            })
+                        })
+                        .unwrap_or_else(|| value.to_string());
+
+                    rows.push((index, display_value));
                 }
 
                 ui.label(format!("Structured entries: {}", rows.len()));
@@ -155,24 +168,86 @@ impl SystemState {
                         });
 
                     ui.label("Value format:");
+
+                    let (mut preferred_translators, mut bad_translators): (Vec<_>, Vec<_>) =
+                        variables
+                            .first()
+                            .and_then(|first_var_ref| {
+                                wave_container.variable_meta(first_var_ref).ok()
+                            })
+                            .map(|meta| {
+                                self.translators
+                                    .all_translator_names()
+                                    .into_iter()
+                                    .partition(|translator_name| {
+                                        let translator =
+                                            self.translators.get_translator(translator_name);
+
+                                        match translator.translates(&meta) {
+                                            Ok(TranslationPreference::Yes) => true,
+                                            Ok(TranslationPreference::Prefer) => true,
+                                            Ok(TranslationPreference::No) => false,
+                                            Err(_) => false,
+                                        }
+                                    })
+                            })
+                            .unwrap_or_else(|| (vec![], self.translators.all_translator_names()));
+
+                    preferred_translators.sort_by(|a, b| numeric_sort::cmp(a, b));
+                    bad_translators.sort_by(|a, b| numeric_sort::cmp(a, b));
+
+                    // ui.menu_button(format!("{}",self.memory_viewer.value_format), |ui| {
+                    //     ui.set_min_width(180.0);
+
+                    //     for name in preferred_translators {
+                    //         if ui
+                    //             .radio(self.memory_viewer.value_format == name, name)
+                    //             .clicked()
+                    //         {
+                    //             self.memory_viewer.value_format = name.to_string();
+                    //         }
+                    //     }
+
+                    //     if !bad_translators.is_empty() {
+                    //         ui.separator();
+
+                    //         ui.menu_button("Not recommended", |ui| {
+                    //             ui.set_min_width(180.0);
+
+                    //             for name in bad_translators {
+                    //                 if ui
+                    //                     .radio(self.memory_viewer.value_format == name, name)
+                    //                     .clicked()
+                    //                 {
+                    //                     self.memory_viewer.value_format = name.to_string();
+                    //                 }
+                    //             }
+                    //         });
+                    //     }
+                    // });
                     egui::ComboBox::from_id_salt("memory_viewer_value_format")
-                        .selected_text(self.memory_viewer.value_format.label())
+                        .selected_text(self.memory_viewer.value_format.clone())
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(
-                                &mut self.memory_viewer.value_format,
-                                MemoryViewerFormat::Decimal,
-                                "Decimal",
-                            );
-                            ui.selectable_value(
-                                &mut self.memory_viewer.value_format,
-                                MemoryViewerFormat::Hexadecimal,
-                                "Hexadecimal",
-                            );
-                            ui.selectable_value(
-                                &mut self.memory_viewer.value_format,
-                                MemoryViewerFormat::Binary,
-                                "Binary",
-                            );
+                            for name in preferred_translators {
+                                ui.selectable_value(
+                                    &mut self.memory_viewer.value_format,
+                                    name.to_string(),
+                                    name,
+                                );
+                            }
+
+                            if !bad_translators.is_empty() {
+                                ui.separator();
+                                ui.label("Not recommended");
+
+                                for name in bad_translators {
+                                    ui.selectable_value(
+                                        &mut self.memory_viewer.value_format,
+                                        name.to_string(),
+                                        name,
+                                    );
+                                }
+                            }
                         });
                 });
 
@@ -209,10 +284,8 @@ impl SystemState {
                             return true;
                         }
 
-                        let display_value =
-                            format_value(value, self.memory_viewer.value_format).to_lowercase();
-
-                        display_value == search_value || display_value.contains(&search_value)
+                        let value = value.to_lowercase();
+                        value == search_value || value.contains(&search_value)
                     })
                     .collect();
 
@@ -269,7 +342,7 @@ impl SystemState {
                             });
 
                             row.col(|ui| {
-                                ui.monospace(format_value(value, self.memory_viewer.value_format));
+                                ui.monospace(value);
                             });
                         });
                     });
