@@ -1,4 +1,3 @@
-use crate::memory_viewer::MemoryViewerFormat;
 use egui::{Pos2, Rect};
 use eyre::Result;
 use num::BigInt;
@@ -18,6 +17,7 @@ use crate::{
     file_history::FileHistory,
     frame_buffer::{FrameBufferArrayCache, FrameBufferContent, FrameBufferPixelCache},
     hierarchy::{AllVariableCacheKey, ScopeExpandType, VariableListRow},
+    memory_viewer::{ChangeEndpoint, ChangeModes, MemoryViewerCache, MemoryViewerFormat},
     message::Message,
     mousegestures::AnnotationKind,
     state::UserState,
@@ -39,6 +39,9 @@ pub struct MemoryViewerState {
     pub index_format: MemoryViewerFormat,
     pub value_format: String,
     pub scroll_to_row: Option<usize>,
+    pub color_values: bool,
+    pub change_display_modes: ChangeModes,
+    pub change_end: ChangeEndpoint,
 }
 
 pub struct SystemState {
@@ -120,6 +123,7 @@ pub struct SystemState {
     pub(crate) frame_buffer_array_cache: Option<FrameBufferArrayCache>,
     pub(crate) frame_buffer_pixel_cache: Option<FrameBufferPixelCache>,
     pub(crate) memory_viewer: MemoryViewerState,
+    pub(crate) memory_viewer_cache: Option<MemoryViewerCache>,
     // Benchmarking stuff
     /// Invalidate draw commands every frame to make performance comparison easier
     pub(crate) continuous_redraw: bool,
@@ -205,17 +209,8 @@ impl SystemState {
             frame_buffer_content: None,
             frame_buffer_array_cache: None,
             frame_buffer_pixel_cache: None,
-            memory_viewer: MemoryViewerState {
-                open: false,
-                scope: None,
-                name: None,
-                jump_to_index: String::new(),
-                search_value: String::new(),
-                index_format: MemoryViewerFormat::Decimal,
-                value_format: "Hexadecimal".to_string(),
-                scroll_to_row: None,
-            },
-
+            memory_viewer: MemoryViewerState::default(),
+            memory_viewer_cache: None,
             url_callback: None,
             continuous_redraw: false,
             #[cfg(feature = "performance_plot")]
