@@ -194,7 +194,7 @@ test-macos-aarch64:
         HOMEBREW_NO_INSTALL_CLEANUP: 1
     tags:
         - saas-macos-medium-m1
-    image: macos-14-xcode-15
+    image: macos-15-xcode-16
     before_script:
         - brew install rustup-init
         - ulimit -n 1000
@@ -389,7 +389,7 @@ macos-aarch64_build:
         HOMEBREW_NO_INSTALL_CLEANUP: 1
     tags:
         - saas-macos-medium-m1
-    image: macos-14-xcode-15
+    image: macos-15-xcode-16
     before_script:
         - brew install rustup-init
         - rustup install $SURFER_MSRV
