@@ -1233,6 +1233,14 @@ snapshot_ui_with_file_and_msgs! {framebuffer_ycbcr, "examples/smallsurfer.vcd", 
     Message::SetFrameBufferWidth(48),
 ]}
 
+snapshot_ui_with_file_and_msgs! {memory_viewer_scope_open, "examples/smallsurfer.vcd", [
+    Message::AddVariables(vec![VariableRef::from_hierarchy_string("image_memory.height")]),
+    Message::CursorSet(BigInt::from(0)),
+    Message::OpenMemoryViewer {
+        scope: ScopeRef::from_hierarchy_string("image_memory.mem"),
+        name: Some("image_memory.mem".to_string()),
+    },
+]}
 snapshot_ui!(regex_error_indication, || {
     let mut state = SystemState::new_default_config()
         .unwrap()

@@ -17,7 +17,7 @@ use crate::{
     file_history::FileHistory,
     frame_buffer::{FrameBufferArrayCache, FrameBufferContent, FrameBufferPixelCache},
     hierarchy::{AllVariableCacheKey, ScopeExpandType, VariableListRow},
-    memory_viewer::{ChangeEndpoint, ChangeModes, MemoryViewerCache, MemoryViewerFormat},
+    memory_viewer::{ChangeModes, MemoryViewerCache, MemoryViewerFormat},
     message::Message,
     mousegestures::AnnotationKind,
     state::UserState,
@@ -41,7 +41,6 @@ pub struct MemoryViewerState {
     pub scroll_to_row: Option<usize>,
     pub color_values: bool,
     pub change_display_modes: ChangeModes,
-    pub change_end: ChangeEndpoint,
 }
 
 pub struct SystemState {

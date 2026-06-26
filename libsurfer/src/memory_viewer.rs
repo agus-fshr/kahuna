@@ -4,6 +4,7 @@ use crate::{
     translation::{TranslationResultExt, ValueKindExt},
     wave_container::ScopeRefExt,
 };
+use ecolor::Color32;
 use egui_extras::{Column, TableBuilder};
 use std::rc::Rc;
 use surfer_translation_types::{TranslationPreference, Translator, ValueKind};
@@ -35,36 +36,21 @@ impl Default for MemoryViewerState {
             scroll_to_row: None,
             color_values: false,
             change_display_modes: ChangeModes::AllValues,
-            change_end: ChangeEndpoint::Marker(1),
         }
     }
 }
-#[derive(PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ChangeModes {
     AllValues,
     ChangedAtCursor,
-    ChangedBtwMarkers,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum ChangeEndpoint {
-    Cursor,
-    Marker(u8),
-}
-
-impl ChangeEndpoint {
-    pub fn label(self) -> String {
-        match self {
-            Self::Cursor => "Cursor".to_string(),
-            Self::Marker(index) => format!("Marker {index}"),
-        }
-    }
+    ChangedBtwCursorAndMarker(u8),
 }
 #[derive(Clone)]
 pub(crate) struct MemoryRow {
     index: i64,
     value: String,
     kind: ValueKind,
+    color: Option<Color32>,
     changed_values: bool,
     change_b_selected_times: bool,
 }
@@ -73,7 +59,7 @@ pub(crate) struct MemoryViewerCacheKey {
     pub scope: crate::wave_container::ScopeRef,
     pub cursor: num::BigUint,
     pub value_format: String,
-    pub change_end: ChangeEndpoint,
+    pub change_display_modes: ChangeModes,
 }
 
 #[derive(Clone)]
@@ -124,14 +110,19 @@ fn closest_row_index(rows: &[&MemoryRow], target_index: i64) -> Option<usize> {
         .min_by_key(|(_position, row)| (row.index - target_index).abs())
         .map(|(row_index, _)| row_index)
 }
-fn marker_combo(ui: &mut egui::Ui, id: &'static str, selected: &mut ChangeEndpoint) {
+fn marker_combo(ui: &mut egui::Ui, id: &'static str, selected: &mut ChangeModes) {
+    let selected_marker = match selected {
+        ChangeModes::ChangedBtwCursorAndMarker(index) => *index,
+        _ => 1,
+    };
+
     egui::ComboBox::from_id_salt(id)
-        .selected_text(selected.label())
+        .selected_text(format!("Marker {selected_marker}"))
         .show_ui(ui, |ui| {
-            for marker_index in [0, 1, 2] {
+            for marker_index in 0..=254 {
                 ui.selectable_value(
                     selected,
-                    ChangeEndpoint::Marker(marker_index),
+                    ChangeModes::ChangedBtwCursorAndMarker(marker_index),
                     format!("Marker {marker_index}"),
                 );
             }
@@ -189,7 +180,7 @@ impl SystemState {
                     scope: scope.clone(),
                     cursor: cursor.clone(),
                     value_format: translator_name.clone(),
-                    change_end: self.memory_viewer.change_end,
+                    change_display_modes: self.memory_viewer.change_display_modes,
                 };
                 let cache_hit = self
                     .memory_viewer_cache
@@ -204,25 +195,20 @@ impl SystemState {
                 let mut variables = wave_container.variables_in_scope(&scope);
                 variables.sort_by_key(|v| v.index.unwrap_or(i64::MAX));
 
-                let endpoint_time = |endpoint: ChangeEndpoint| match endpoint {
-                    ChangeEndpoint::Cursor => {
-                        waves.cursor.as_ref().and_then(|cursor| cursor.to_biguint())
+                let change_range = match self.memory_viewer.change_display_modes {
+                    ChangeModes::ChangedBtwCursorAndMarker(marker_index) => {
+                        waves.markers.get(&marker_index).and_then(|marker| {
+                            marker.to_biguint().map(|marker_time| {
+                                if cursor <= marker_time {
+                                    (cursor.clone(), marker_time)
+                                } else {
+                                    (marker_time, cursor.clone())
+                                }
+                            })
+                        })
                     }
-                    ChangeEndpoint::Marker(index) => waves
-                        .markers
-                        .get(&index)
-                        .and_then(|marker| marker.to_biguint()),
+                    _ => None,
                 };
-
-                let change_range = endpoint_time(ChangeEndpoint::Cursor).and_then(|start_time| {
-                    endpoint_time(self.memory_viewer.change_end).map(|end_time| {
-                        if start_time <= end_time {
-                            (start_time, end_time)
-                        } else {
-                            (end_time, start_time)
-                        }
-                    })
-                });
                 if rows.is_empty() {
                     for var_ref in &variables {
                         let Some(index) = var_ref
@@ -232,7 +218,7 @@ impl SystemState {
                             continue;
                         };
 
-                        let Some((change_time, value)) = wave_container
+                        let Some((change_time, raw_value)) = wave_container
                             .query_variable(&var_ref, &cursor)
                             .ok()
                             .flatten()
@@ -260,28 +246,60 @@ impl SystemState {
                             .variable_meta(&var_ref)
                             .ok()
                             .and_then(|meta| {
-                                translator.translate(&meta, &value).ok().and_then(|result| {
-                                    result
-                                        .format_flat(
-                                            &Some(translator_name.clone()),
-                                            &[],
-                                            &self.translators,
-                                        )
-                                        .into_iter()
-                                        .next()
-                                        .and_then(|formatted| {
-                                            formatted.value.map(|value| (value.value, value.kind))
-                                        })
-                                })
+                                translator
+                                    .translate(&meta, &raw_value)
+                                    .ok()
+                                    .and_then(|result| {
+                                        result
+                                            .format_flat(
+                                                &Some(translator_name.clone()),
+                                                &[],
+                                                &self.translators,
+                                            )
+                                            .into_iter()
+                                            .next()
+                                            .and_then(|formatted| {
+                                                formatted
+                                                    .value
+                                                    .map(|value| (value.value, value.kind))
+                                            })
+                                    })
                             })
-                            .unwrap_or_else(|| (value.to_string(), ValueKind::Normal));
+                            .unwrap_or_else(|| (raw_value.to_string(), ValueKind::Normal));
 
                         let (value, kind) = display_value;
+                        let color = wave_container
+                            .variable_meta(&var_ref)
+                            .ok()
+                            .and_then(|meta| {
+                                self.translators
+                                    .get_translator("RGB")
+                                    .translate(&meta, &raw_value)
+                                    .ok()
+                                    .and_then(|result| {
+                                        result
+                                            .format_flat(
+                                                &Some("RGB".to_string()),
+                                                &[],
+                                                &self.translators,
+                                            )
+                                            .into_iter()
+                                            .next()
+                                            .and_then(|formatted| {
+                                                formatted.value.map(|value| value.kind)
+                                            })
+                                    })
+                            })
+                            .and_then(|kind| match kind {
+                                ValueKind::Custom(color) => Some(color),
+                                _ => None,
+                            });
 
                         rows.push(MemoryRow {
                             index,
                             value,
                             kind,
+                            color,
                             changed_values: changed,
                             change_b_selected_times,
                         });
@@ -311,17 +329,21 @@ impl SystemState {
                             ChangeModes::ChangedAtCursor,
                             "Show changed values at current cursor",
                         );
-                        ui.radio_value(
-                            &mut self.memory_viewer.change_display_modes,
-                            ChangeModes::ChangedBtwMarkers,
-                            "Show changed rows between cursor and marker",
-                        );
                         ui.horizontal(|ui| {
-                            ui.label("Marker:");
+                            let marker_index = match self.memory_viewer.change_display_modes {
+                                ChangeModes::ChangedBtwCursorAndMarker(index) => index,
+                                _ => 1,
+                            };
+
+                            ui.radio_value(
+                                &mut self.memory_viewer.change_display_modes,
+                                ChangeModes::ChangedBtwCursorAndMarker(marker_index),
+                                "Show changed rows between cursor and",
+                            );
                             marker_combo(
                                 ui,
                                 "memory_viewer_marker",
-                                &mut self.memory_viewer.change_end,
+                                &mut self.memory_viewer.change_display_modes,
                             );
                         });
                     });
@@ -441,7 +463,7 @@ impl SystemState {
                                     return false;
                                 }
                             }
-                            ChangeModes::ChangedBtwMarkers => {
+                            ChangeModes::ChangedBtwCursorAndMarker(_marker) => {
                                 if !row.change_b_selected_times {
                                     return false;
                                 }
@@ -511,9 +533,12 @@ impl SystemState {
 
                             row.col(|ui| {
                                 if self.memory_viewer.color_values {
-                                    let color = row_data
-                                        .kind
-                                        .color(ui.visuals().text_color(), &self.user.config.theme);
+                                    let color = row_data.color.unwrap_or_else(|| {
+                                        row_data.kind.color(
+                                            self.user.config.theme.variable_default,
+                                            &self.user.config.theme,
+                                        )
+                                    });
 
                                     ui.horizontal(|ui| {
                                         ui.colored_label(color, "■");
