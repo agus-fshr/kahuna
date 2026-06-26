@@ -18,7 +18,7 @@ impl SystemState {
                 fill: self.user.config.theme.primary_ui_color.background,
                 ..Default::default()
             })
-            .show_inside(ui, |ui| {
+            .show(ui, |ui| {
                 self.draw_overview(ui, waves, msgs);
             });
     }

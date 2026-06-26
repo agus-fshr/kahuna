@@ -91,7 +91,7 @@ impl SystemState {
             .default_size(total_space / 2.0)
             .max_size(total_space - 64.0)
             .frame(Frame::new().inner_margin(Margin::same(5)))
-            .show_inside(ui, |ui| {
+            .show(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.heading("Scopes")
                         .context_menu(|ui| self.hierarchy_menu(msgs, ui));
@@ -123,7 +123,7 @@ impl SystemState {
             });
         CentralPanel::default()
             .frame(Frame::new().inner_margin(Margin::same(5)))
-            .show_inside(ui, |ui| {
+            .show(ui, |ui| {
                 ui.with_layout(Layout::left_to_right(Align::TOP), |ui| {
                     ui.heading("Variables")
                         .context_menu(|ui| self.hierarchy_menu(msgs, ui));

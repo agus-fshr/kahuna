@@ -77,7 +77,7 @@ impl ButtonBuilder {
 
 impl SystemState {
     pub fn add_menu_panel(&self, ui: &mut Ui, msgs: &mut Vec<Message>) {
-        Panel::top("menu").show_inside(ui, |ui| {
+        Panel::top("menu").show(ui, |ui| {
             egui::MenuBar::new().ui(ui, |ui| {
                 self.menu_contents(ui, msgs);
             });

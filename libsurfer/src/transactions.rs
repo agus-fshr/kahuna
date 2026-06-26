@@ -71,7 +71,7 @@ impl SystemState {
         egui::Panel::right("Transaction Details")
             .default_size(330.)
             .size_range(10.0..=max_width)
-            .show_inside(ui, |ui| {
+            .show(ui, |ui| {
                 ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                 self.handle_pointer_in_ui(ui, msgs);
                 draw_focused_transaction_details(ui, transactions, focused_transaction);

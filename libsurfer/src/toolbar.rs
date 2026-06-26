@@ -106,7 +106,7 @@ fn add_toolbar_button(
 impl SystemState {
     /// Add panel and draw toolbar.
     pub(crate) fn add_toolbar_panel(&mut self, ui: &mut Ui, msgs: &mut Vec<Message>) {
-        Panel::top("toolbar").show_inside(ui, |ui| {
+        Panel::top("toolbar").show(ui, |ui| {
             self.draw_toolbar(ui, msgs);
         });
     }

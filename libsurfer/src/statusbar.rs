@@ -28,7 +28,7 @@ impl SystemState {
                 },
                 ..Default::default()
             })
-            .show_inside(ui, |ui| {
+            .show(ui, |ui| {
                 self.draw_statusbar(ui, waves, msgs);
             });
     }

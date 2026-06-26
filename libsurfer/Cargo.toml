@@ -109,7 +109,7 @@ wellen.workspace = true
 vergen-gitcl = { workspace = true, features = ["build"] }
 
 [dev-dependencies]
-egui_skia_renderer = { git = "https://gitlab.com/oscargus/egui_skia_renderer.git", rev = "36fe7b49a59a87f9d4b62533bd81e6e37139e9cd" }
+egui_skia_renderer = { git = "https://gitlab.com/oscargus/egui_skia_renderer.git", rev = "fe18d2fc81ec1feb91dc5dda432396d1ae1863ee" }
 image.workspace = true
 image-compare.workspace = true
 port_check.workspace = true

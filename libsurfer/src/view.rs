@@ -388,7 +388,7 @@ impl SystemState {
                     fill: self.user.config.theme.primary_ui_color.background,
                     ..Default::default()
                 })
-                .show_inside(ui, |ui| {
+                .show(ui, |ui| {
                     self.user.sidepanel_width = Some(ui.clip_rect().width());
                     match self.hierarchy_style() {
                         HierarchyStyle::Separate => self.separate(ui, &mut msgs),
@@ -417,7 +417,7 @@ impl SystemState {
                     Panel::left("focus id list")
                         .default_size(40.)
                         .size_range(40.0..=max_width)
-                        .show_inside(ui, |ui| {
+                        .show(ui, |ui| {
                             let response = ScrollArea::both()
                                 .vertical_scroll_offset(scroll_offset)
                                 .show(ui, |ui| {
@@ -443,7 +443,7 @@ impl SystemState {
                     )
                     .default_size(100.)
                     .size_range(100.0..=max_width)
-                    .show_inside(ui, |ui| {
+                    .show(ui, |ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                         let text_margin = Self::item_text_margin(ui);
                         if self.show_default_timeline() {
@@ -490,7 +490,7 @@ impl SystemState {
                     )
                     .default_size(100.)
                     .size_range(10.0..=max_width)
-                    .show_inside(ui, |ui| {
+                    .show(ui, |ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                         let response = ScrollArea::both()
                             .auto_shrink([false; 2])
@@ -531,7 +531,7 @@ impl SystemState {
                                 .fill(self.user.config.theme.secondary_ui_color.background)
                                 .stroke(std_stroke),
                         )
-                        .show_inside(ui, |ui| {
+                        .show(ui, |ui| {
                             waves.draw_annotation_list(
                                 ui,
                                 &mut msgs,
@@ -559,7 +559,7 @@ impl SystemState {
                                 outer_margin: Margin::ZERO,
                                 ..Default::default()
                             })
-                            .show_inside(ui, |ui| self.draw_items(ui, &mut msgs, viewport_idx));
+                            .show(ui, |ui| self.draw_items(ui, &mut msgs, viewport_idx));
                     }
                 }
 
@@ -569,7 +569,7 @@ impl SystemState {
                         outer_margin: Margin::ZERO,
                         ..Default::default()
                     })
-                    .show_inside(ui, |ui| {
+                    .show(ui, |ui| {
                         self.draw_items(ui, &mut msgs, 0);
                         if ui.input(|i| i.pointer.primary_clicked()) && !self.click_handled {
                             msgs.push(Message::AnnotationClicked(None, None, None, None, None));
@@ -588,7 +588,7 @@ impl SystemState {
         {
             CentralPanel::default()
                 .frame(Frame::NONE.fill(self.user.config.theme.canvas_colors.background))
-                .show_inside(ui, |ui| {
+                .show(ui, |ui| {
                     ui.add_space(max_height * 0.1);
                     ui.vertical_centered(|ui| {
                         ui.label(RichText::new("🏄 Surfer").monospace().size(24.));

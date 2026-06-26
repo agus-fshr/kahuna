@@ -30,7 +30,7 @@ pub struct AnnotationData {
 }
 
 impl AnnotationData {
-    pub(crate) fn new(id_source: impl std::hash::Hash, name: String, num: i32) -> Self {
+    pub(crate) fn new(id_source: impl egui::AsId, name: String, num: i32) -> Self {
         let id = Id::new(id_source);
         let c_id = Id::new(("comment_box", num));
         AnnotationData {
