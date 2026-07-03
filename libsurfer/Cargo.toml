@@ -35,9 +35,10 @@ tempfile.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["performance_plot"]
+default = ["performance_plot", "https"]
 accesskit = ["eframe/accesskit", "eframe/web_screen_reader"]
 f128 = ["dep:f128"]
+https = ["reqwest/default-tls"]
 performance_plot = ["dep:egui_plot"]
 python = ["pyo3", "surfer-translation-types/pyo3"]
 # Enable when building the wasm32 target for the VS Code extension.

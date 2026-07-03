@@ -26,9 +26,9 @@ base64 = "0.22"
 bincode = "1.3.3"
 bytes = "1.11"
 bytesize = "2.3.1"
-camino = { version = "1.1.6", features = ["serde1"] }
+camino = { version = "1.1.6", default-features = false, features = ["serde1"] }
 chrono = { version = "0.4.31", default-features = false, features = ["std", "wasmbind"] }
-clap = { version = "4.6", features = ['derive'] }
+clap = { version = "4.6", default-features = false, features = ['std', 'derive'] }
 config = { version = "0.15.8", default-features = false, features = ["toml"] }
 derive_more = { version = "2.1", default-features = false, features = [
     "add",
@@ -88,12 +88,12 @@ pure-rust-locales = "0.8.1"
 pyo3 = { version = "0.29", features = ["auto-initialize", "abi3"] }
 rayon = "1.10.0"
 regex = "1.12.3"
-reqwest = { version = "0.13.2", features = ["stream"] }
+reqwest = { version = "0.13.2", default-features = false, features = ["stream"] }
 rfd = { version = "0.17.1", default-features = false, features = [
     "xdg-portal",
 ] }
-ron = { version = "0.12", features = ["integer128"] }
-serde = { version = "1.0.218", features = ["derive"] }
+ron = { version = "0.12", default-features = false, features = ["integer128"] }
+serde = { version = "1.0.218", default-features = false, features = ["derive"] }
 serde_json = "1.0.139"
 simple-eyre = "0.3.1"
 softposit = "0.4.0"
@@ -103,19 +103,19 @@ sys-locale = "0.3.2"
 tempfile = "3.20.0"
 test-log = "0.2.15"
 thiserror = "2"
-tokio = { version = "1.43", features = ["rt", "time", "macros"] }
+tokio = { version = "1.43", default-features = false, features = ["io-util", "rt", "time", "macros"] }
 tokio-stream = "0.1.17"
 toml = { version = "1.1", default-features = false, features = ["parse"] }
 tracing = "0.1.43"
-tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.22", default-features = false, features = ["env-filter", "fmt", "registry"] }
 vergen-gitcl = "9.1"
 wasm-bindgen = "0.2.120"
 wasm-bindgen-futures = "0.4.70"
 wasm-tracing = "2.1"
-web-sys = { version = "= 0.3.97", features = ["Location", "Navigator", "UrlSearchParams", "Window"] }
-web-time = "1.1.0"
-wellen = { version = "0.25.5", features = ["serde1"] }
-whoami = "2"
+web-sys = { version = "= 0.3.97", default-features = false, features = ["Location", "Navigator", "UrlSearchParams", "Window"] }
+web-time = { version = "1.1.0", default-features = false }
+wellen = { version = "0.25.5", default-features = false, features = ["serde1"] }
+whoami = { version = "2", default-features = false, features = ["std"] }
 
 [profile.release]
 opt-level = 3 # fast and small wasm

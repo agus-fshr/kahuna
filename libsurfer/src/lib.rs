@@ -2597,9 +2597,7 @@ impl SystemState {
 
             Message::SetActiveViewport(idx) => {
                 if let Some(waves) = self.user.waves.as_mut() {
-                    let Some(last_idx) = waves.viewports.len().checked_sub(1) else {
-                        return None;
-                    };
+                    let last_idx = waves.viewports.len().checked_sub(1)?;
                     waves.last_active_viewport_idx = idx.min(last_idx);
                 }
             }

@@ -490,7 +490,7 @@ pub async fn surver_main(
     let mut txs: Vec<Sender<LoaderMessage>> = Vec::new();
     // load files
     for (file_index, filename) in filenames.iter().enumerate() {
-        let start_read_header = web_time::Instant::now();
+        let start_read_header = Instant::now();
         let header_result = wellen::viewers::read_header_from_file(
             filename.clone(),
             &WELLEN_SURFER_DEFAULT_OPTIONS,
@@ -602,7 +602,7 @@ fn loader(
 ) -> Result<()> {
     loop {
         // load the body of the file
-        let start_load_body = web_time::Instant::now();
+        let start_load_body = Instant::now();
         let (filename, hierarchy, body_progress) = {
             let state_guard = state
                 .read()

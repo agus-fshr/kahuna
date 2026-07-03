@@ -217,7 +217,7 @@ impl SystemState {
                         };
 
                         let Some((change_time, raw_value)) = wave_container
-                            .query_variable(&var_ref, &cursor)
+                            .query_variable(var_ref, &cursor)
                             .ok()
                             .flatten()
                             .and_then(|query_result| query_result.current)
@@ -241,7 +241,7 @@ impl SystemState {
                             .unwrap_or(false);
 
                         let display_value = wave_container
-                            .variable_meta(&var_ref)
+                            .variable_meta(var_ref)
                             .ok()
                             .and_then(|meta| {
                                 translator

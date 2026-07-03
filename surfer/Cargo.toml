@@ -14,9 +14,10 @@ wasm-bindgen-futures.workspace = true
 web-sys.workspace = true
 
 [features]
-default = ["performance_plot", "wasm_plugins"]
+default = ["performance_plot", "https", "wasm_plugins"]
 accesskit = ["libsurfer/accesskit"]
 f128 = ["libsurfer/f128"]
+https = ["libsurfer/https"]
 performance_plot = ["libsurfer/performance_plot"]
 python = ["libsurfer/python"]
 # Enable when building the wasm32 target for the VS Code extension.
