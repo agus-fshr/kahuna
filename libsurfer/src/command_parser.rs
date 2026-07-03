@@ -357,6 +357,7 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
             "frame_buffer_set_mode",
             "frame_buffer_set_width",
             "frame_buffer_set_range",
+            "memory_viewer_open",
             "pause_simulation",
             "unpause_simulation",
             "undo",
@@ -1012,6 +1013,15 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
                             .map(|c| (c[0], c[1]))
                             .collect::<Vec<_>>();
                         Some(Command::Terminal(Message::SetFrameBufferRange(pairs)))
+                    }),
+                ),
+                "memory_viewer_open" => single_word(
+                    arrays.clone(),
+                    Box::new(|word| {
+                        Some(Command::Terminal(Message::OpenMemoryViewer {
+                            scope: ScopeRef::from_hierarchy_string(word),
+                            name: Some(word.to_string()),
+                        }))
                     }),
                 ),
                 "dump_tree" => Some(Command::Terminal(Message::DumpTree)),

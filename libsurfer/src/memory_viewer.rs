@@ -4,7 +4,6 @@ use crate::{
     translation::{TranslationResultExt, ValueKindExt},
     wave_container::ScopeRefExt,
 };
-use ecolor::Color32;
 use egui_extras::{Column, TableBuilder};
 use std::rc::Rc;
 use surfer_translation_types::{TranslationPreference, Translator, ValueKind};
@@ -50,7 +49,6 @@ pub(crate) struct MemoryRow {
     index: i64,
     value: String,
     kind: ValueKind,
-    color: Option<Color32>,
     changed_values: bool,
     change_b_selected_times: bool,
 }
@@ -268,38 +266,10 @@ impl SystemState {
                             .unwrap_or_else(|| (raw_value.to_string(), ValueKind::Normal));
 
                         let (value, kind) = display_value;
-                        let color = wave_container
-                            .variable_meta(&var_ref)
-                            .ok()
-                            .and_then(|meta| {
-                                self.translators
-                                    .get_translator("RGB")
-                                    .translate(&meta, &raw_value)
-                                    .ok()
-                                    .and_then(|result| {
-                                        result
-                                            .format_flat(
-                                                &Some("RGB".to_string()),
-                                                &[],
-                                                &self.translators,
-                                            )
-                                            .into_iter()
-                                            .next()
-                                            .and_then(|formatted| {
-                                                formatted.value.map(|value| value.kind)
-                                            })
-                                    })
-                            })
-                            .and_then(|kind| match kind {
-                                ValueKind::Custom(color) => Some(color),
-                                _ => None,
-                            });
-
                         rows.push(MemoryRow {
                             index,
                             value,
                             kind,
-                            color,
                             changed_values: changed,
                             change_b_selected_times,
                         });
@@ -533,13 +503,10 @@ impl SystemState {
 
                             row.col(|ui| {
                                 if self.memory_viewer.color_values {
-                                    let color = row_data.color.unwrap_or_else(|| {
-                                        row_data.kind.color(
-                                            self.user.config.theme.variable_default,
-                                            &self.user.config.theme,
-                                        )
-                                    });
-
+                                    let color = row_data.kind.color(
+                                        self.user.config.theme.variable_default,
+                                        &self.user.config.theme,
+                                    );
                                     ui.horizontal(|ui| {
                                         ui.colored_label(color, "■");
                                         ui.monospace(&row_data.value);
