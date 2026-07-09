@@ -16,6 +16,8 @@ use crate::{
     wave_data::{PER_SCROLL_EVENT, SCROLL_EVENTS_PER_PAGE},
 };
 
+pub(crate) const TOOLBAR_TIME_ID: &str = "toolbar-time";
+
 #[derive(Clone, Copy)]
 pub(crate) struct ToolbarGroupSpec {
     pub id: &'static str,
@@ -676,7 +678,7 @@ impl SystemState {
 
     fn draw_toolbar_group_time_input(&self, ui: &mut Ui, msgs: &mut Vec<Message>) {
         if let Some(waves) = &self.user.waves {
-            self.time_input_widget(ui, "toolbar-time", waves, msgs);
+            self.time_input_widget(ui, TOOLBAR_TIME_ID, waves, msgs);
         }
     }
 

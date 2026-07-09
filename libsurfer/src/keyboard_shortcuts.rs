@@ -41,6 +41,7 @@ pub enum ShortcutAction {
     ZoomToFit,
     ZoomToCursor,
     GoToTime,
+    FocusVariableNameFilter,
 }
 
 // Cached dispatch table entry: (action, modifier_priority)
@@ -114,6 +115,8 @@ pub struct SurferShortcuts {
     pub zoom_to_cursor: Vec<KeyboardShortcut>,
     #[serde(with = "keyboard_shortcuts_serde")]
     pub go_to_time: Vec<KeyboardShortcut>,
+    #[serde(with = "keyboard_shortcuts_serde")]
+    pub focus_variable_name_filter: Vec<KeyboardShortcut>,
 
     #[serde(skip)]
     cached_dispatch_table: Vec<DispatchEntry>,
@@ -272,6 +275,10 @@ impl SurferShortcuts {
                 action: ShortcutAction::GoToTime,
                 priority: modifier_priority(&self.go_to_time),
             },
+            DispatchEntry {
+                action: ShortcutAction::FocusVariableNameFilter,
+                priority: modifier_priority(&self.focus_variable_name_filter),
+            },
         ]);
 
         // Sort by modifier priority (lower number = higher priority)
@@ -312,6 +319,7 @@ impl SurferShortcuts {
             ShortcutAction::ZoomToFit => &self.zoom_to_fit,
             ShortcutAction::ZoomToCursor => &self.zoom_to_cursor,
             ShortcutAction::GoToTime => &self.go_to_time,
+            ShortcutAction::FocusVariableNameFilter => &self.focus_variable_name_filter,
         }
     }
 
@@ -506,7 +514,13 @@ impl SurferShortcuts {
             }
             ShortcutAction::GoToTime => {
                 msgs.push(Message::SetRequestTextEditFocus(
-                    "toolbar-time".to_string(),
+                    crate::toolbar::TOOLBAR_TIME_ID.to_string(),
+                    true,
+                ));
+            }
+            ShortcutAction::FocusVariableNameFilter => {
+                msgs.push(Message::SetRequestTextEditFocus(
+                    crate::variable_filter::VARIABLE_FILTER_ID.to_string(),
                     true,
                 ));
             }

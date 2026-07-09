@@ -21,6 +21,8 @@ use surfer_translation_types::VariableDirection;
 
 use std::cmp::Ordering;
 
+pub const VARIABLE_FILTER_ID: &str = "variable-filter";
+
 #[derive(Clone, Debug, Display, PartialEq, Serialize, Deserialize, Sequence)]
 pub enum VariableNameFilterType {
     #[display("Fuzzy")]
@@ -297,16 +299,29 @@ impl SystemState {
                         });
                     }
 
+                    // Handle focus request
+                    let request_focus = *self
+                        .text_edit_request_focus
+                        .get(VARIABLE_FILTER_ID)
+                        .unwrap_or(&false);
+                    if request_focus && !response.has_focus() {
+                        response.request_focus();
+                        msgs.push(Message::SetRequestTextEditFocus(
+                            VARIABLE_FILTER_ID.to_string(),
+                            false,
+                        ));
+                    }
+
                     // Handle focus via generic widget focus messages
                     if response.gained_focus() {
                         msgs.push(Message::SetTextEditFocused(
-                            "variable-filter".to_string(),
+                            VARIABLE_FILTER_ID.to_string(),
                             true,
                         ));
                     }
                     if response.lost_focus() {
                         msgs.push(Message::SetTextEditFocused(
-                            "variable-filter".to_string(),
+                            VARIABLE_FILTER_ID.to_string(),
                             false,
                         ));
                     }

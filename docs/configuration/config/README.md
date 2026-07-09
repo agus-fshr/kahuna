@@ -251,6 +251,7 @@ The default configuration defines these actions:
 | `divider_add` | `D` |
 | `zoom_to_fit` | `Shift+F` |
 | `go_to_time` | `Command+G` |
+| `focus_variable_name_filter` | `V` |
 
 ## Notes
 
