@@ -327,7 +327,7 @@ impl Viewport {
         let half_width = (self.curr_right.absolute(num_timestamps)
             - self.curr_left.absolute(num_timestamps))
             * delta
-            / 2.;
+            * 0.5;
 
         self.set_viewport_to_clipped(
             (center - half_width).relative(num_timestamps),
@@ -435,7 +435,7 @@ impl Viewport {
     pub fn go_to_time_f64(&mut self, center: Absolute, num_timestamps: &BigInt) {
         let half_width = (self.curr_right.absolute(num_timestamps)
             - self.curr_left.absolute(num_timestamps))
-            / 2.;
+            * 0.5;
 
         self.set_viewport_to_clipped(
             (center - half_width).relative(num_timestamps),
@@ -501,7 +501,7 @@ impl Viewport {
 
 #[must_use]
 fn ease_in_out_size(r: RangeInclusive<f64>, t: f64) -> f64 {
-    r.start() + ((r.end() - r.start()) * -((std::f64::consts::PI * t).cos() - 1.) / 2.)
+    r.start() + ((r.end() - r.start()) * -((std::f64::consts::PI * t).cos() - 1.) * 0.5)
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

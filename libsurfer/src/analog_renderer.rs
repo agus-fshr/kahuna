@@ -193,8 +193,8 @@ fn draw_building_indicator(offset: f32, height_scaling_factor: f32, ctx: &mut Dr
     let text = ["Building.  ", "Building.. ", "Building..."][dot_index];
 
     let row_height = ctx.cfg.line_height * height_scaling_factor;
-    let center_y = offset + row_height / 2.0;
-    let center_x = ctx.cfg.canvas_size.x / 2.0;
+    let center_y = offset + row_height * 0.5;
+    let center_x = ctx.cfg.canvas_size.x * 0.5;
     let pos = (ctx.to_screen)(center_x, center_y);
 
     ctx.painter.text(
@@ -898,13 +898,13 @@ fn draw_amplitude_labels(render_ctx: &RenderContext, ctx: &mut DrawingContext) {
         );
 
         let rect = Rect::from_min_size(
-            Pos2::new(label_pos.x - 2.0, label_pos.y - galley.size().y / 2.0 - 2.0),
+            Pos2::new(label_pos.x - 2.0, label_pos.y - galley.size().y * 0.5 - 2.0),
             Vec2::new(galley.size().x + 4.0, galley.size().y + 4.0),
         );
         ctx.painter
             .rect_filled(rect, CornerRadius::same(2), bg_color);
         ctx.painter.text(
-            Pos2::new(label_pos.x, label_pos.y - galley.size().y / 2.0),
+            Pos2::new(label_pos.x, label_pos.y - galley.size().y * 0.5),
             Align2::LEFT_TOP,
             combined_text,
             font,

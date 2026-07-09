@@ -17,11 +17,12 @@ use crate::displayed_item::{
 };
 use crate::displayed_item_tree::{DisplayedItemTree, ItemIndex, TargetPosition, VisibleItemIndex};
 use crate::graphics::{Graphic, GraphicId};
+use crate::item_drawing_info::ItemDrawingInfo;
 use crate::transaction_container::{StreamScopeRef, TransactionRef, TransactionStreamRef};
 use crate::transactions::calculate_rows_of_stream;
 use crate::translation::{DynTranslator, TranslatorList, VariableInfoExt};
 use crate::variable_name_type::VariableNameType;
-use crate::view::{DrawingContext, ItemDrawingInfo};
+use crate::view::DrawingContext;
 use crate::viewport::Viewport;
 use crate::wave_container::{
     AnalogCacheKey, ScopeRef, ScopeRefExt as _, VariableMeta, VariableRef, VariableRefExt,
@@ -1165,7 +1166,7 @@ mod tests {
     use super::*;
     use crate::data_container::DataContainer;
     use crate::displayed_item_tree::DisplayedItemTree;
-    use crate::view::{DividerDrawingInfo, ItemDrawingInfo};
+    use crate::item_drawing_info::{DividerDrawingInfo, ItemDrawingInfo};
     use crate::viewport::Viewport;
     use crate::wave_source::{WaveFormat, WaveSource};
 

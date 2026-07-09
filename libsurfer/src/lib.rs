@@ -30,6 +30,7 @@ pub mod fzcmd;
 pub mod graphics;
 pub mod help;
 pub mod hierarchy;
+pub mod item_drawing_info;
 pub mod keyboard_shortcuts;
 pub mod keys;
 pub mod logs;
@@ -77,6 +78,7 @@ pub mod wellen;
 use crate::annotation::Annotatable;
 use crate::annotation::Annotation;
 use crate::annotation_list::AnnotationGroup;
+use crate::annotation_list::DEFAULT_GROUP_NAME;
 use crate::arrow::ArrowAnnotation;
 use crate::comment::CommentMessage;
 use crate::config::AutoLoad;
@@ -2405,7 +2407,7 @@ impl SystemState {
                 let new_id = new_rect.get_id();
                 waves.annotations.push(new_rect);
 
-                waves.add_annotation_to_group("Ungrouped", new_id);
+                waves.add_annotation_to_group(DEFAULT_GROUP_NAME, new_id);
             }
             Message::ArrowAdded {
                 wave_point_from,
@@ -2426,7 +2428,7 @@ impl SystemState {
                 let new_id = new_arrow.get_id();
                 waves.annotations.push(new_arrow);
 
-                waves.add_annotation_to_group("Ungrouped", new_id);
+                waves.add_annotation_to_group(DEFAULT_GROUP_NAME, new_id);
             }
 
             Message::RemoveAnnotation(anno_id) => {
@@ -2452,53 +2454,7 @@ impl SystemState {
             }
 
             Message::GoToAnnotationPosition(anno_id, viewport_idx) => {
-                let waves = self.user.waves.as_mut()?;
-                //If there are no timestamps, the file is not fully loaded
-                if let Some(num_timestamps) = waves.num_timestamps() {
-                    if let Some(target) = waves.get_annotation_by_id(&anno_id) {
-                        let mut left = target.get_start_time();
-                        let mut right = target.get_end_time();
-                        let from_wave = target.get_from_wave();
-                        let to_wave = target.get_to_wave();
-
-                        let difference = (&right - &left) / 2;
-                        left -= &difference;
-                        right += difference;
-                        waves.viewports[viewport_idx].zoom_to_range(&left, &right, &num_timestamps);
-
-                        if let Some(from_wave) = from_wave {
-                            if let Some(to_wave) = to_wave {
-                                if let Some(y_1) = waves.get_item_y(&from_wave) {
-                                    if let Some(y_2) = waves.get_item_y(&to_wave) {
-                                        // let y_diff = (y_2 - y_1) / 2.0;
-                                        // let center = y_1 + y_diff;
-                                        if let Some(item) = waves.get_item_at_y(y_1.min(y_2)) {
-                                            waves.scroll_to_item(item.0);
-                                        }
-                                    } else {
-                                        warn!(
-                                            "GoToAnnotationPosition: got None from get_item_y(&to_wave)"
-                                        );
-                                    }
-                                } else {
-                                    warn!(
-                                        "GoToAnnotationPosition: got None from get_item_y(&from_wave)"
-                                    );
-                                }
-                            } else {
-                                warn!("GoToAnnotationPosition: got None from to_wave");
-                            }
-                        } else {
-                            warn!("GoToAnnotationPosition: got None from from_wave");
-                        }
-                    }
-
-                    self.invalidate_draw_commands();
-                } else {
-                    warn!(
-                        "Go to marker position: No timestamps count, even though waveforms should be loaded"
-                    );
-                }
+                self.go_to_annotation_position(anno_id, viewport_idx);
             }
 
             Message::ToggleAnnotationlistVisibility() => {
@@ -2662,12 +2618,6 @@ impl SystemState {
         }
 
         Some(())
-    }
-
-    fn annotation_id(&mut self) -> Id {
-        let id = egui::Id::new(("annotation", self.annotation_id_source));
-        self.annotation_id_source += 1;
-        id
     }
 
     pub fn add_scope_as_group(

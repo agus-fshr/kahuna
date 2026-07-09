@@ -1,4 +1,5 @@
 use crate::annotation::{Annotatable, AnnotationData};
+use crate::annotation_list::DEFAULT_GROUP_NAME;
 use crate::comment::Comment;
 use crate::config::SurferTheme;
 use crate::displayed_item::DisplayedItemRef;
@@ -86,7 +87,7 @@ fn item_center_y(waves: &WaveData, item_ref: &DisplayedItemRef) -> Option<f32> {
     match waves.get_displayed_item_index(item_ref) {
         Some(vidx) => {
             let info = waves.drawing_infos.get(vidx.0)?;
-            Some((info.top() + info.bottom()) * 0.5)
+            Some(info.center())
         }
         None => None,
     }
@@ -305,7 +306,7 @@ impl Annotatable for ArrowAnnotation {
                 .iter()
                 .find(|group| group.annotations.contains(&self.get_id()))
                 .map(|group| group.name.clone())
-                .unwrap_or("Ungrouped".to_string());
+                .unwrap_or(DEFAULT_GROUP_NAME.to_string());
             hover_response.on_hover_ui(|ui| {
                 self.draw_hover_info(group_name, ui, (&hover_start_time, &hover_end_time));
             });

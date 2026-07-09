@@ -11,9 +11,10 @@ use crate::drawing_canvas::draw_vertical_line;
 use crate::{
     config::SurferTheme,
     displayed_item::{DisplayedItem, DisplayedItemRef, DisplayedMarker},
+    item_drawing_info::ItemDrawingInfo,
     message::Message,
     time::TimeFormatter,
-    view::{DrawingContext, ItemDrawingInfo},
+    view::DrawingContext,
     viewport::Viewport,
     wave_data::WaveData,
 };

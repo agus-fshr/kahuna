@@ -881,8 +881,7 @@ impl SystemState {
             } else if row >= row_rects.len() {
                 row_rects.last().map(Rect::bottom).unwrap_or(0.0)
             } else {
-                row_rects[row - 1].bottom()
-                    + (row_rects[row].top() - row_rects[row - 1].bottom()) / 2.0
+                row_rects[row - 1].bottom().midpoint(row_rects[row].top())
             };
 
             let x_min = row_rects
@@ -920,7 +919,7 @@ impl SystemState {
             row_groups[row_groups.len() - 1].rect.right()
         } else {
             (row_groups[visible_index - 1].rect.right() + row_groups[visible_index].rect.left())
-                / 2.0
+                * 0.5
         };
 
         ui.painter().line_segment(

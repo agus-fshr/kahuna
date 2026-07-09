@@ -23,12 +23,13 @@ use crate::data_container::DataContainer;
 use crate::displayed_item::{
     AnalogSettings, DisplayedFieldRef, DisplayedItemRef, DisplayedVariable,
 };
+use crate::item_drawing_info::ItemDrawingInfo;
 use crate::time::TimeFormatter;
 use crate::tooltips::handle_transaction_tooltip;
 use crate::trace_style::{TraceStyle, TraceValue};
 use crate::transaction_container::{TransactionRef, TransactionStreamRef};
 use crate::translation::{TranslationResultExt, TranslatorList, ValueKindExt, VariableInfoExt};
-use crate::view::{DrawConfig, DrawingContext, ItemDrawingInfo};
+use crate::view::{DrawConfig, DrawingContext};
 use crate::wave_container::{QueryResult, VariableRefExt};
 use crate::wave_data::WaveData;
 use crate::{
@@ -1406,11 +1407,11 @@ impl SystemState {
 
             let points = vec![
                 trace_coords(*old_x, 0.5),
-                trace_coords(old_x + transition_width / 2., 0.0),
-                trace_coords(new_x - transition_width / 2., 0.0),
+                trace_coords(old_x + transition_width * 0.5, 0.0),
+                trace_coords(new_x - transition_width * 0.5, 0.0),
                 trace_coords(*new_x, 0.5),
-                trace_coords(new_x - transition_width / 2., 1.0),
-                trace_coords(old_x + transition_width / 2., 1.0),
+                trace_coords(new_x - transition_width * 0.5, 1.0),
+                trace_coords(old_x + transition_width * 0.5, 1.0),
                 trace_coords(*old_x, 0.5),
             ];
 
@@ -1528,7 +1529,7 @@ impl SystemState {
                             *new_x,
                             offset
                                 + ctx.cfg.line_height * height_scaling_factor
-                                + ctx.theme.linewidth / 2.,
+                                + ctx.theme.linewidth * 0.5,
                         ),
                     },
                     CornerRadius::ZERO,

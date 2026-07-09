@@ -215,7 +215,7 @@ pub fn show_command_prompt(
                             ),
                         );
                         ui.vertical(|ui| {
-                            ui.add_space(label.rect.height() / 2.0);
+                            ui.add_space(label.rect.height() * 0.5);
                             ui.separator()
                         });
                     });
@@ -268,7 +268,7 @@ pub fn show_command_prompt(
                                         ),
                                     );
                                     ui.vertical(|ui| {
-                                        ui.add_space(label.rect.height() / 2.0);
+                                        ui.add_space(label.rect.height() * 0.5);
                                         ui.separator()
                                     });
                                 });
@@ -290,7 +290,7 @@ pub fn show_command_prompt(
                                         ),
                                     );
                                     ui.vertical(|ui| {
-                                        ui.add_space(label.rect.height() / 2.0);
+                                        ui.add_space(label.rect.height() * 0.5);
                                         ui.separator()
                                     });
                                 });

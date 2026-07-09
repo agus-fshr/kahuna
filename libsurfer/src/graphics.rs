@@ -80,12 +80,7 @@ impl WaveData {
             .iter_visible()
             .zip(&self.drawing_infos)
             .find(|(node, _info)| node.item_ref == y.item)
-            .map(|(_, info)| match y.anchor {
-                Anchor::Top => info.top(),
-                Anchor::Center => info.top() + (info.bottom() - info.top()) / 2.,
-                Anchor::Percentual(p) => info.top() + p * (info.bottom() - info.top()),
-                Anchor::Bottom => info.bottom(),
-            })
+            .map(|(_, info)| info.get_y_from_anchor(&y.anchor))
             .map(|point| point - self.top_item_draw_offset)
     }
 
@@ -97,7 +92,7 @@ impl WaveData {
             .iter_visible()
             .zip(&self.drawing_infos)
             .find(|(node, _info)| node.item_ref == item)
-            .map(|(_, info)| (y - info.top()) / (info.bottom() - info.top()))
+            .map(|(_, info)| (y - info.top()) / (info.height()))
     }
 
     pub(crate) fn draw_graphics(

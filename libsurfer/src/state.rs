@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     CanvasState, StartupParams,
-    annotation_list::AnnotationGroup,
+    annotation_list::{AnnotationGroup, DEFAULT_GROUP_NAME},
     clock_highlighting::ClockHighlightType,
     config::{ArrowKeyBindings, AutoLoad, PrimaryMouseDrag, SurferConfig, TransitionValue},
     data_container::DataContainer,
@@ -414,7 +414,7 @@ impl SystemState {
             self.user.wanted_timeunit = waves.inner.metadata().timescale.unit;
 
             let ungrouped = AnnotationGroup {
-                name: String::from("Ungrouped"),
+                name: String::from(DEFAULT_GROUP_NAME),
                 cycle_counter: 0,
                 annotations: Vec::new(),
             };

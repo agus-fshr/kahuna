@@ -1,5 +1,6 @@
 use crate::{
     annotation::{Annotatable, AnnotationData},
+    annotation_list::DEFAULT_GROUP_NAME,
     comment::Comment,
     config::SurferTheme,
     displayed_item::DisplayedItemRef,
@@ -279,7 +280,7 @@ impl Annotatable for RectAnnotation {
                 .iter()
                 .find(|group| group.annotations.contains(&self.get_id()))
                 .map(|group| group.name.clone())
-                .unwrap_or("Ungrouped".to_string());
+                .unwrap_or(DEFAULT_GROUP_NAME.to_string());
             let res = ui.add(rectangle_annotation).on_hover_ui(|ui| {
                 self.draw_hover_info(group_name, ui, (&hover_start_time, &hover_end_time));
             });

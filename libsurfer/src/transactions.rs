@@ -198,7 +198,7 @@ fn draw_focused_transaction_details(
         Layout::top_down(Align::LEFT).with_cross_justify(true),
         |ui| {
             ui.label(FOCUSED_TX_DETAILS_HDR);
-            let column_width = ui.available_width() / 2.;
+            let column_width = ui.available_width() * 0.5;
             TableBuilder::new(ui)
                 .column(Column::exact(column_width))
                 .column(Column::auto())

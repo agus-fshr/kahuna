@@ -6,7 +6,7 @@ use tracing::warn;
 #[derive(Clone, Default)]
 pub struct AnnotationList {}
 
-const DEFAULT_GROUP_NAME: &str = "Ungrouped";
+pub(crate) const DEFAULT_GROUP_NAME: &str = "Ungrouped";
 const TIME_FONT_SIZE: f32 = 11.;
 const DEFAULT_SPACE: f32 = 4.;
 const WIDTH_CONSTRAINT: f32 = 30.;
@@ -399,7 +399,7 @@ impl WaveData {
                                 ui.horizontal(|ui| {
                                     ui.add_space(18.0); // Indent comments
                                     ui.vertical(|ui| {
-                                        ui.add_space(DEFAULT_SPACE / 2.);
+                                        ui.add_space(DEFAULT_SPACE * 0.5);
                                         ui.set_max_width(ui.available_width() - WIDTH_CONSTRAINT);
                                         ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
 

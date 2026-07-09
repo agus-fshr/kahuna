@@ -148,8 +148,8 @@ pub fn draw_quickstart_help_window(
         .pivot(Align2::CENTER_CENTER)
         .open(&mut open)
         .default_pos(Pos2::new(
-            ctx.content_rect().size().x / 2.,
-            ctx.content_rect().size().y / 2.,
+            ctx.content_rect().size().x * 0.5,
+            ctx.content_rect().size().y * 0.5,
         ))
         .show(ctx, |ui| {
             ui.vertical(|ui| {

@@ -2,8 +2,10 @@ use egui::{Color32, Frame, Id, Pos2, Rect, Stroke, Ui};
 use egui_remixicon::icons;
 use emath::RectTransform;
 use num::BigInt;
+use tracing::warn;
 
 use crate::{
+    SystemState,
     arrow::ArrowAnnotation,
     comment::{Comment, CommentMessage},
     config::SurferTheme,
@@ -517,5 +519,55 @@ impl WaveData {
         if !comment_changes.is_empty() {
             msgs.push(Message::UpdateCommentBox(comment_changes));
         }
+    }
+}
+
+impl SystemState {
+    pub(crate) fn go_to_annotation_position(&mut self, anno_id: Id, viewport_idx: usize) {
+        if let Some(waves) = self.user.waves.as_mut() {
+            if let Some(num_timestamps) = waves.num_timestamps() {
+                if let Some(target) = waves.get_annotation_by_id(&anno_id) {
+                    let mut left = target.get_start_time();
+                    let mut right = target.get_end_time();
+                    let from_wave = target.get_from_wave();
+                    let to_wave = target.get_to_wave();
+
+                    let difference = (&right - &left) / 2;
+                    left -= &difference;
+                    right += difference;
+                    waves.viewports[viewport_idx].zoom_to_range(&left, &right, &num_timestamps);
+
+                    if let Some(from_wave) = from_wave
+                        && let Some(to_wave) = to_wave
+                    {
+                        if let Some(y_1) = waves.get_item_y(&from_wave)
+                            && let Some(y_2) = waves.get_item_y(&to_wave)
+                        {
+                            // let y_diff = (y_2 - y_1) * 0.5;
+                            // let center = y_1 + y_diff;
+                            if let Some(item) = waves.get_item_at_y(y_1.min(y_2)) {
+                                waves.scroll_to_item(item.0);
+                            }
+                        } else {
+                            warn!("GoToAnnotationPosition: got None from get_item_y");
+                        }
+                    } else {
+                        warn!("GoToAnnotationPosition: got None from to_wave");
+                    }
+                }
+
+                self.invalidate_draw_commands();
+            } else {
+                warn!(
+                    "Go to marker position: No timestamps count, even though waveforms should be loaded"
+                );
+            }
+        }
+    }
+
+    pub(crate) fn annotation_id(&mut self) -> Id {
+        let id = egui::Id::new(("annotation", self.annotation_id_source));
+        self.annotation_id_source += 1;
+        id
     }
 }
