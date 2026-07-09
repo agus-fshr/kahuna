@@ -1281,11 +1281,18 @@ where
 pub fn find_local_configs() -> Vec<PathBuf> {
     use crate::util::search_upward;
     match std::env::current_dir() {
-        Ok(dir) => search_upward(dir, "/", LOCAL_DIR)
-            .into_iter()
-            .filter(|p| p.is_dir()) // Only keep directories and ignore plain files.
-            .rev() // Reverse for pre-order traversal of directories.
-            .collect(),
+        Ok(dir) => {
+            let root = dir
+                .ancestors()
+                .last()
+                .map(Path::to_path_buf)
+                .unwrap_or_else(|| PathBuf::from("/"));
+            search_upward(dir, root, LOCAL_DIR)
+                .into_iter()
+                .filter(|p| p.is_dir()) // Only keep directories and ignore plain files.
+                .rev() // Reverse for pre-order traversal of directories.
+                .collect()
+        }
         Err(_) => vec![],
     }
 }
