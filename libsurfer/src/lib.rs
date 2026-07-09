@@ -363,7 +363,7 @@ impl SystemState {
             Message::AddScope(scope, recursive) => {
                 self.save_current_canvas(format!("Add scope {}", scope.name()));
 
-                let vars = self.get_scope(scope, recursive);
+                let vars = self.get_scope(&scope, recursive);
                 let waves = self.user.waves.as_mut()?;
 
                 // TODO add parameter to add_variables, insert to (self.drag_target_idx, self.drag_source_idx)
@@ -1765,7 +1765,7 @@ impl SystemState {
                 self.invalidate_draw_commands();
             }
             Message::SaveStateFile(path) => self.save_state_file(path),
-            Message::LoadStateFromData(bytes) => self.load_state_from_bytes(bytes),
+            Message::LoadStateFromData(bytes) => self.load_state_from_bytes(&bytes),
             Message::LoadStateFile(path) => self.load_state_file(path),
             Message::LoadState(state, path) => self.load_state(state, path),
             Message::SetStateFile(path) => {
@@ -2405,7 +2405,7 @@ impl SystemState {
                 let new_id = new_rect.get_id();
                 waves.annotations.push(new_rect);
 
-                waves.add_annotation_to_group(String::from("Ungrouped"), new_id);
+                waves.add_annotation_to_group("Ungrouped", new_id);
             }
             Message::ArrowAdded {
                 wave_point_from,
@@ -2426,7 +2426,7 @@ impl SystemState {
                 let new_id = new_arrow.get_id();
                 waves.annotations.push(new_arrow);
 
-                waves.add_annotation_to_group(String::from("Ungrouped"), new_id);
+                waves.add_annotation_to_group("Ungrouped", new_id);
             }
 
             Message::RemoveAnnotation(anno_id) => {
@@ -2524,7 +2524,7 @@ impl SystemState {
                 self.save_current_canvas(format!("Removed annotation group {name}"));
                 let waves = self.user.waves.as_mut()?;
 
-                waves.delete_group(name);
+                waves.delete_group(&name);
             }
 
             Message::DeleteAllAnnotationInGroup(name) => {
@@ -2533,7 +2533,7 @@ impl SystemState {
                 ));
                 let waves = self.user.waves.as_mut()?;
 
-                waves.remove_all_annotations_from_group(name);
+                waves.remove_all_annotations_from_group(&name);
             }
 
             Message::AddCharToPrompt(c) => *self.char_to_add_to_prompt.borrow_mut() = Some(c),
@@ -2546,7 +2546,7 @@ impl SystemState {
 
                 match target {
                     Some(id) => {
-                        waves.add_annotation_to_group(name?, id);
+                        waves.add_annotation_to_group(&name?, id);
                     }
                     None => {
                         warn!("Error: Just removed non existent id!");

@@ -54,7 +54,7 @@ pub fn new_rv32_translator() -> InstructionTranslator {
         decoder: Decoder::new(
             &specs::rv32::RV32
                 .iter()
-                .map(|s| s.to_string())
+                .map(std::string::ToString::to_string)
                 .collect::<Vec<String>>(),
         )
         .expect("Can't build RV32 decoder"),
@@ -69,7 +69,7 @@ pub fn new_rv64_translator() -> InstructionTranslator {
         decoder: Decoder::new(
             &specs::rv64::RV64
                 .iter()
-                .map(|s| s.to_string())
+                .map(std::string::ToString::to_string)
                 .collect::<Vec<String>>(),
         )
         .expect("Can't build RV64 decoder"),

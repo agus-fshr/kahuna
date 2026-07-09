@@ -878,7 +878,7 @@ impl WaveData {
     pub fn draw_divider_text(
         &self,
         color: Option<Color32>,
-        text: String,
+        text: &str,
         ticks: &[(String, f32, i64)],
         ctx: &DrawingContext<'_>,
         y_offset: f32,
@@ -889,7 +889,7 @@ impl WaveData {
 
         let layout = ctx
             .painter
-            .layout_no_wrap(text.clone(), font.clone(), color);
+            .layout_no_wrap(text.to_string(), font.clone(), color);
         let text_width = layout.rect.width() + (font.size * 2.);
 
         let (next_tick, next_stamp) = ticks
@@ -916,7 +916,7 @@ impl WaveData {
             ctx.painter.text(
                 (ctx.to_screen)(*x, y_offset),
                 Align2::CENTER_TOP,
-                text.clone(),
+                text.to_string(),
                 font.clone(),
                 color,
             );

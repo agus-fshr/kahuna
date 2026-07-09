@@ -39,12 +39,12 @@ impl FileHistory {
         disambiguated_labels(&self.files)
     }
 
-    pub fn add(&mut self, file: Utf8PathBuf) {
-        if self.max_entries == 0 || is_connection_entry(&file) {
+    pub fn add(&mut self, file: &Utf8PathBuf) {
+        if self.max_entries == 0 || is_connection_entry(file) {
             return;
         }
 
-        self.files.retain(|path| path != &file);
+        self.files.retain(|path| path != file);
         self.files.insert(0, file.clone());
         self.truncate_to_limit();
         self.save_to_disk();
@@ -209,9 +209,9 @@ mod tests {
     fn keeps_most_recent_on_top() {
         let mut history = FileHistory::load(3);
 
-        history.add(Utf8PathBuf::from("a.vcd"));
-        history.add(Utf8PathBuf::from("b.vcd"));
-        history.add(Utf8PathBuf::from("a.vcd"));
+        history.add(&Utf8PathBuf::from("a.vcd"));
+        history.add(&Utf8PathBuf::from("b.vcd"));
+        history.add(&Utf8PathBuf::from("a.vcd"));
 
         assert_eq!(
             history.files(),
@@ -223,9 +223,9 @@ mod tests {
     fn respects_max_entries() {
         let mut history = FileHistory::load(2);
 
-        history.add(Utf8PathBuf::from("a.vcd"));
-        history.add(Utf8PathBuf::from("b.vcd"));
-        history.add(Utf8PathBuf::from("c.vcd"));
+        history.add(&Utf8PathBuf::from("a.vcd"));
+        history.add(&Utf8PathBuf::from("b.vcd"));
+        history.add(&Utf8PathBuf::from("c.vcd"));
 
         assert_eq!(
             history.files(),
@@ -237,9 +237,9 @@ mod tests {
     fn ignores_connection_entries() {
         let mut history = FileHistory::load(5);
 
-        history.add(Utf8PathBuf::from("https://surver.example/status"));
-        history.add(Utf8PathBuf::from("ws://surver.example/socket"));
-        history.add(Utf8PathBuf::from("wave.vcd"));
+        history.add(&Utf8PathBuf::from("https://surver.example/status"));
+        history.add(&Utf8PathBuf::from("ws://surver.example/socket"));
+        history.add(&Utf8PathBuf::from("wave.vcd"));
 
         assert_eq!(history.files(), [Utf8PathBuf::from("wave.vcd")]);
     }

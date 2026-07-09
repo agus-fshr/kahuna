@@ -882,7 +882,7 @@ impl SystemState {
                         draw_true_name(
                             &name,
                             &mut label,
-                            monospace_font.clone(),
+                            &monospace_font,
                             self.user.config.theme.foreground,
                             char_width_mono,
                             space_for_name,

@@ -616,7 +616,7 @@ impl SystemState {
         draw_gesture_text(
             ctx,
             (ctx.to_screen)(end.x, end.y),
-            text.to_string(),
+            text,
             &self.user.config.theme,
         );
     }
@@ -648,7 +648,7 @@ impl SystemState {
         draw_gesture_text(
             ctx,
             (ctx.to_screen)(end.x, end.y),
-            text.to_string(),
+            text,
             &self.user.config.theme,
         );
     }
@@ -702,14 +702,15 @@ impl SystemState {
         let start_time_str = time_formatter.format(&start_time);
         let end_time_str = time_formatter.format(&end_time);
         let diff_time_str = time_formatter.format(&diff_time);
+        let text = if measure {
+            format!("{start_time_str} to {end_time_str}\nΔ = {diff_time_str}")
+        } else {
+            format!("Zoom in: {diff_time_str}\n{start_time_str} to {end_time_str}")
+        };
         draw_gesture_text(
             ctx,
             (ctx.to_screen)(current_location.x, current_location.y),
-            if measure {
-                format!("{start_time_str} to {end_time_str}\nΔ = {diff_time_str}")
-            } else {
-                format!("Zoom in: {diff_time_str}\n{start_time_str} to {end_time_str}")
-            },
+            text,
             &self.user.config.theme,
         );
     }

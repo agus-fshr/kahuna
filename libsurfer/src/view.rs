@@ -985,7 +985,7 @@ impl SystemState {
                             vidx,
                             displayed_item,
                             *item_ref,
-                            FieldRef::without_fields(displayed_variable.variable_ref.clone()),
+                            &FieldRef::without_fields(displayed_variable.variable_ref.clone()),
                             &mut item_offsets,
                             &displayed_variable.info,
                             row_ui,
@@ -1094,7 +1094,7 @@ impl SystemState {
         vidx: VisibleItemIndex,
         displayed_item: &DisplayedItem,
         displayed_id: DisplayedItemRef,
-        field: FieldRef,
+        field: &FieldRef,
         msgs: &mut Vec<Message>,
         ui: &mut Ui,
         meta: Option<&VariableMeta>,
@@ -1104,7 +1104,7 @@ impl SystemState {
             vidx,
             displayed_id,
             displayed_item,
-            Some(&field),
+            Some(field),
             msgs,
             ui,
             meta,
@@ -1143,7 +1143,7 @@ impl SystemState {
         vidx: VisibleItemIndex,
         displayed_item: &DisplayedItem,
         displayed_id: DisplayedItemRef,
-        field: FieldRef,
+        field: &FieldRef,
         drawing_infos: &mut Vec<ItemDrawingInfo>,
         info: &VariableInfo,
         ui: &mut Ui,
@@ -1164,7 +1164,7 @@ impl SystemState {
             VariableInfo::Compound { subfields } => {
                 let mut header = egui::collapsing_header::CollapsingState::load_with_default_open(
                     ui.ctx(),
-                    egui::Id::new(&field),
+                    egui::Id::new(field),
                     false,
                 );
                 let desired_height = self.desired_item_row_height(displayed_item);
@@ -1190,7 +1190,7 @@ impl SystemState {
                                                 vidx,
                                                 displayed_item,
                                                 displayed_id,
-                                                field.clone(),
+                                                field,
                                                 msgs,
                                                 ui,
                                                 None,
@@ -1208,7 +1208,7 @@ impl SystemState {
                                             vidx,
                                             displayed_item,
                                             displayed_id,
-                                            new_path,
+                                            &new_path,
                                             drawing_infos,
                                             info,
                                             ui,
@@ -1256,7 +1256,7 @@ impl SystemState {
                             vidx,
                             displayed_item,
                             displayed_id,
-                            field.clone(),
+                            field,
                             msgs,
                             ui,
                             None,
@@ -1440,7 +1440,7 @@ impl SystemState {
                         draw_true_name(
                             &true_name,
                             &mut layout_job,
-                            monospace_font.clone(),
+                            monospace_font,
                             color_pair.foreground,
                             monospace_width,
                             available_width,
@@ -1859,8 +1859,8 @@ impl SystemState {
             displayed_field_ref,
             displayed_variable,
             translator,
-            meta.clone(),
-            val,
+            &meta,
+            &val,
         );
 
         // If time doesn't match cursor, i.e., we are not at a transition or the cursor is at zero
@@ -1883,8 +1883,8 @@ impl SystemState {
             displayed_field_ref,
             displayed_variable,
             translator,
-            meta,
-            prev_val,
+            &meta,
+            &prev_val,
         );
 
         match self.transition_value() {
@@ -1904,10 +1904,10 @@ impl SystemState {
         displayed_field_ref: &DisplayedFieldRef,
         displayed_variable: &DisplayedVariable,
         translator: &dyn Translator<VarId, ScopeId, Message>,
-        meta: VariableMeta,
-        val: VariableValue,
+        meta: &VariableMeta,
+        val: &VariableValue,
     ) -> Option<String> {
-        let translated = translator.translate(&meta, &val).ok()?;
+        let translated = translator.translate(meta, val).ok()?;
         let fields = translated.format_flat(
             &displayed_variable.format,
             &displayed_variable.field_formats,
@@ -2014,7 +2014,7 @@ impl SystemState {
 pub fn draw_true_name(
     true_name: &TrueName,
     layout_job: &mut LayoutJob,
-    font: FontId,
+    font: &FontId,
     foreground: Color32,
     char_width: f32,
     allowed_space: f32,

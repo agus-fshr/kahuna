@@ -1186,8 +1186,8 @@ impl Default for SurferConfig {
     }
 }
 
-fn hex_string_to_color32(str: String) -> Result<Color32> {
-    let str = str.strip_prefix('#').unwrap_or(&str).to_string();
+fn hex_string_to_color32(str: &str) -> Result<Color32> {
+    let str = str.strip_prefix('#').unwrap_or(str).to_string();
     let str = if str.len() == 3 {
         str.chars().flat_map(|c| [c, c]).collect()
     } else {
@@ -1215,7 +1215,7 @@ where
     D: Deserializer<'de>,
 {
     let buf = String::deserialize(deserializer)?;
-    hex_string_to_color32(buf).map_err(de::Error::custom)
+    hex_string_to_color32(&buf).map_err(de::Error::custom)
 }
 
 fn deserialize_color_map<'de, D>(deserializer: D) -> Result<HashMap<String, Color32>, D::Error>
@@ -1331,7 +1331,7 @@ mod tests {
     #[test]
     fn test_hex_string_3_chars() {
         // Test that 3-character hex strings are doubled correctly
-        let result = hex_string_to_color32("abc".to_string()).unwrap();
+        let result = hex_string_to_color32("abc").unwrap();
         let expected = Color32::from_rgb(0xaa, 0xbb, 0xcc);
         assert_eq!(result, expected);
     }
@@ -1339,7 +1339,7 @@ mod tests {
     #[test]
     fn test_hex_string_6_chars() {
         // Test standard 6-character hex string
-        let result = hex_string_to_color32("a7e47e".to_string()).unwrap();
+        let result = hex_string_to_color32("a7e47e").unwrap();
         let expected = Color32::from_rgb(0xa7, 0xe4, 0x7e);
         assert_eq!(result, expected);
     }
@@ -1347,7 +1347,7 @@ mod tests {
     #[test]
     fn test_hex_string_black() {
         // Test black color (all zeros)
-        let result = hex_string_to_color32("000000".to_string()).unwrap();
+        let result = hex_string_to_color32("000000").unwrap();
         let expected = Color32::from_rgb(0x00, 0x00, 0x00);
         assert_eq!(result, expected);
     }
@@ -1355,7 +1355,7 @@ mod tests {
     #[test]
     fn test_hex_string_white() {
         // Test white color (all ones)
-        let result = hex_string_to_color32("ffffff".to_string()).unwrap();
+        let result = hex_string_to_color32("ffffff").unwrap();
         let expected = Color32::from_rgb(0xff, 0xff, 0xff);
         assert_eq!(result, expected);
     }
@@ -1363,7 +1363,7 @@ mod tests {
     #[test]
     fn test_hex_string_uppercase() {
         // Test uppercase hex characters
-        let result = hex_string_to_color32("ABCDEF".to_string()).unwrap();
+        let result = hex_string_to_color32("ABCDEF").unwrap();
         let expected = Color32::from_rgb(0xab, 0xcd, 0xef);
         assert_eq!(result, expected);
     }
@@ -1371,7 +1371,7 @@ mod tests {
     #[test]
     fn test_hex_string_mixed_case() {
         // Test mixed case hex characters
-        let result = hex_string_to_color32("Ab5DeF".to_string()).unwrap();
+        let result = hex_string_to_color32("Ab5DeF").unwrap();
         let expected = Color32::from_rgb(0xab, 0x5d, 0xef);
         assert_eq!(result, expected);
     }
@@ -1379,54 +1379,54 @@ mod tests {
     #[test]
     fn test_hex_string_invalid_length() {
         // Test that invalid length returns error
-        let result = hex_string_to_color32("ab".to_string());
+        let result = hex_string_to_color32("ab");
         assert!(result.is_err());
 
-        let result = hex_string_to_color32("abcde".to_string());
+        let result = hex_string_to_color32("abcde");
         assert!(result.is_err());
 
-        let result = hex_string_to_color32("abcdefgh".to_string());
+        let result = hex_string_to_color32("abcdefgh");
         assert!(result.is_err());
     }
 
     #[test]
     fn test_hex_string_invalid_characters() {
         // Test that invalid hex characters return error
-        let result = hex_string_to_color32("GGGGGG".to_string());
+        let result = hex_string_to_color32("GGGGGG");
         assert!(result.is_err());
 
-        let result = hex_string_to_color32("12345g".to_string());
+        let result = hex_string_to_color32("12345g");
         assert!(result.is_err());
 
-        let result = hex_string_to_color32("zzzzzz".to_string());
+        let result = hex_string_to_color32("zzzzzz");
         assert!(result.is_err());
     }
 
     #[test]
     fn test_hex_string_empty() {
         // Test empty string
-        let result = hex_string_to_color32(String::new());
+        let result = hex_string_to_color32("");
         assert!(result.is_err());
     }
 
     #[test]
     fn test_hex_string_3_chars_doubling() {
         // Test specific 3-character doubling behavior
-        let result = hex_string_to_color32("050".to_string()).unwrap();
+        let result = hex_string_to_color32("050").unwrap();
         let expected = Color32::from_rgb(0x00, 0x55, 0x00);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn test_hex_string_with_hash_3_chars() {
-        let result = hex_string_to_color32("#abc".to_string()).unwrap();
+        let result = hex_string_to_color32("#abc").unwrap();
         let expected = Color32::from_rgb(0xaa, 0xbb, 0xcc);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn test_hex_string_with_hash_6_chars() {
-        let result = hex_string_to_color32("#ABCDEF".to_string()).unwrap();
+        let result = hex_string_to_color32("#ABCDEF").unwrap();
         let expected = Color32::from_rgb(0xab, 0xcd, 0xef);
         assert_eq!(result, expected);
     }

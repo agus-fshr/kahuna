@@ -160,8 +160,7 @@ impl SystemState {
                     return;
                 };
 
-                let Some(cursor) = waves.cursor.as_ref().and_then(|cursor| cursor.to_biguint())
-                else {
+                let Some(cursor) = waves.cursor.as_ref().and_then(num::BigInt::to_biguint) else {
                     ui.label("Place the cursor to inspect values.");
                     return;
                 };

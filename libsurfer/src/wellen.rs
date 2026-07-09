@@ -486,7 +486,7 @@ impl WellenContainer {
             .all_vars()
             .map(|r| &h[r])
             .filter(|r| r.var_type().is_parameter())
-            .map(|r| r.signal_ref())
+            .map(wellen::Var::signal_ref)
             .collect::<Vec<_>>();
         Ok(self.load_signals(&params))
     }

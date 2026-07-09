@@ -156,7 +156,7 @@ impl SystemState {
                             self.save_current_canvas(format!("Add scope {scope}"));
                         }
                         let scope = ScopeRef::from_hierarchy_string(scope);
-                        let variables = self.get_scope(scope, *recursive);
+                        let variables = self.get_scope(&scope, *recursive);
                         if let Some(waves) = self.user.waves.as_mut() {
                             let (cmd, ids) = waves.add_variables(
                                 &self.translators,
@@ -186,7 +186,7 @@ impl SystemState {
                         for item in items {
                             let variable_ref = VariableRef::from_hierarchy_string(item);
                             let scope = ScopeRef::from_hierarchy_string(item);
-                            let scope_variables = self.get_scope(scope, *recursive);
+                            let scope_variables = self.get_scope(&scope, *recursive);
                             variables.push(variable_ref);
                             variables.extend(scope_variables);
                         }

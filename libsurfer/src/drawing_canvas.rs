@@ -1177,7 +1177,7 @@ impl SystemState {
                     let wave_y_offset = y_offset + self.user.config.layout.waveforms_gap;
                     waves.draw_divider_text(
                         Some(text_color),
-                        displayed_item
+                        &displayed_item
                             .map(super::displayed_item::DisplayedItem::name)
                             .unwrap_or_default(),
                         ticks,

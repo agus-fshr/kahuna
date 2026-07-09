@@ -303,8 +303,8 @@ impl SystemState {
     }
 
     /// Decodes RON bytes and enqueues a `LoadState` message on success.
-    pub(crate) fn load_state_from_bytes(&mut self, bytes: Vec<u8>) {
-        match ron::de::from_bytes(&bytes).context("Failed loading state from bytes") {
+    pub(crate) fn load_state_from_bytes(&mut self, bytes: &[u8]) {
+        match ron::de::from_bytes(bytes).context("Failed loading state from bytes") {
             Ok(s) => {
                 let sender = self.channels.msg_sender.clone();
                 checked_send(&sender, Message::LoadState(s, None));
@@ -339,7 +339,7 @@ mod tests {
             .unwrap()
             .with_params(StartupParams::default());
         let encoded = state.encode_state().unwrap();
-        let bytes = encoded.as_bytes().to_vec();
+        let bytes = encoded.as_bytes();
 
         state.load_state_from_bytes(bytes);
 

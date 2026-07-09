@@ -440,7 +440,7 @@ impl WaveData {
         None
     }
 
-    pub fn remove_all_annotations_from_group(&mut self, name: String) {
+    pub fn remove_all_annotations_from_group(&mut self, name: &str) {
         for group in &mut self.annotation_groups {
             if group.name == name {
                 self.annotations
@@ -451,7 +451,7 @@ impl WaveData {
         }
     }
 
-    pub fn delete_group(&mut self, group_name: String) {
+    pub fn delete_group(&mut self, group_name: &str) {
         if let Some(idx) = self
             .annotation_groups
             .iter()
@@ -461,7 +461,7 @@ impl WaveData {
         }
     }
 
-    pub fn add_annotation_to_group(&mut self, group_name: String, id_to_add: egui::Id) {
+    pub fn add_annotation_to_group(&mut self, group_name: &str, id_to_add: egui::Id) {
         if let Some(idx) = self
             .annotation_groups
             .iter()
@@ -490,7 +490,7 @@ impl WaveData {
             .map(|g| g as _)
     }
 
-    pub fn get_group_from_name(&mut self, group_name: String) -> Option<&mut AnnotationGroup> {
+    pub fn get_group_from_name(&mut self, group_name: &str) -> Option<&mut AnnotationGroup> {
         self.annotation_groups
             .iter_mut()
             .find(|group| group.name == group_name)

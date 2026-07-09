@@ -831,7 +831,7 @@ impl SystemState {
             .filter(|g| g.row == nearest_row)
             .map(|g| g.rect.center().x)
             .collect();
-        centers.sort_by(|a, b| a.total_cmp(b));
+        centers.sort_by(f32::total_cmp);
         let visible_index = centers.iter().take_while(|x| pointer.x > **x).count();
 
         Some((nearest_row, visible_index, false))
@@ -888,12 +888,12 @@ impl SystemState {
             let x_min = row_rects
                 .iter()
                 .map(Rect::left)
-                .min_by(|a, b| a.total_cmp(b))
+                .min_by(f32::total_cmp)
                 .unwrap_or(0.0);
             let x_max = row_rects
                 .iter()
                 .map(Rect::right)
-                .max_by(|a, b| a.total_cmp(b))
+                .max_by(f32::total_cmp)
                 .unwrap_or(x_min + 40.0);
 
             ui.painter().line_segment(
