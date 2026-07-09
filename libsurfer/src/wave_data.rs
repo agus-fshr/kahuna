@@ -128,9 +128,19 @@ fn select_preferred_translator(var: &VariableMeta, translators: &TranslatorList)
     if preferred.len() > 1 {
         // For a single bit that has other preferred translators in addition to "Bit", like enum,
         // we would like to select the other one.
-        let bit = "Bit".to_string();
         if var.num_bits == Some(1) {
+            let bit = "Bit".to_string();
             preferred.retain(|x| x != &bit);
+        } else {
+            // Remove Signed from the list of preferred translators. This can happen for some SystemVerilog files which reports enums as signed.
+            let signed = "Signed".to_string();
+            preferred.retain(|x| x != &signed);
+            if preferred.len() > 1 {
+                // Remove Enum from the list of preferred translators. Probably there is an external translator that wants this.
+                // TODO: Make it possible to detect external translators and use that there.
+                let enum_translator = "Enum".to_string();
+                preferred.retain(|x| x != &enum_translator);
+            }
         }
         if preferred.len() > 1 {
             warn!(
