@@ -81,7 +81,7 @@ struct SignalRMQ {
     timestamps: Vec<u64>,
     values: Vec<f64>,
     block_size: usize,
-    /// sparse_table[level][block_idx] contains min/max for 2^level blocks starting at block_idx
+    /// sparse_table\[level\]\[block_idx\] contains min/max for 2^level blocks starting at block_idx
     /// Level 0 contains individual block summaries.
     sparse_table: Vec<Vec<MinMax>>,
 }

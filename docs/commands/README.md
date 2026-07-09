@@ -139,6 +139,14 @@ Not all commands are available unless a file is loaded. Also, some commands are 
 
   Rename the currently focused item.
 
+* ``item_set_height <HEIGHT>``
+
+  Set the height of the currently focused item.
+
+* ``item_set_analog off | step | interpolated``
+
+  Set the analog display mode of the currently focused item.
+
 * ``theme_select <THEME_NAME>``
 
   Switch to the given color theme.
@@ -261,6 +269,10 @@ Not all commands are available unless a file is loaded. Also, some commands are 
 
   Reload the configuration file.
 
+* ``create_default_config``
+
+  Create a default configuration file in the user config directory. See the log for the location of the created file.
+
 ## Cursor and markers
 
 * ``goto_cursor``
@@ -330,6 +342,12 @@ Not all commands are available unless a file is loaded. Also, some commands are 
   ```
   frame_buffer_set_range 0 479 0 639
   ```
+
+## Memory viewer
+
+* ``memory_viewer_open <SCOPE_NAME>``
+
+  Open a memory viewer window for the given array (scope).
 
 ## Viewports
 

@@ -221,37 +221,38 @@ The default configuration defines these actions:
 
 | Action | Default binding |
 | --- | --- |
-| `open_file` | `Command+O` |
-| `switch_file` | `Command+Shift+O` |
-| `undo` | `Command+Z`, `U` |
-| `redo` | `Command+Shift+Z`, `Command+Y` |
-| `toggle_side_panel` | `B` |
-| `toggle_toolbar` | `T` |
+| `delete_selected` | `Delete`, `X` |
+| `divider_add` | `D` |
+| `focus_variable_name_filter` | `V` |
+| `go_to_time` | `Command+G` |
+| `goto_bottom` | `End` |
 | `goto_end` | `E` |
 | `goto_start` | `S` |
 | `goto_top` | `Home` |
-| `goto_bottom` | `End` |
-| `save_state_file` | `Command+S` |
 | `group_new` | `G` |
 | `item_focus` | `F` |
+| `marker_add` | `M` |
+| `open_file` | `Command+O` |
+| `redo` | `Command+Shift+Z`, `Command+Y` |
+| `reload_waveform` | `R` |
+| `rename_item` | `F2` |
+| `save_state_file` | `Command+S` |
+| `scroll_down` | `PageDown` |
+| `scroll_up` | `PageUp` |
 | `select_all` | `Command+A` |
 | `select_toggle` | `A` |
-| `reload_waveform` | `R` |
-| `zoom_in` | `Plus`, `Equals` |
-| `zoom_out` | `Minus` |
+| `show_command_prompt` | `Space` |
+| `switch_file` | `Command+Shift+O` |
+| `toggle_menu` | `Alt+M` |
+| `toggle_side_panel` | `B` |
+| `toggle_toolbar` | `T` |
 | `ui_zoom_in` | `Command+Plus` |
 | `ui_zoom_out` | `Command+Minus` |
-| `scroll_up` | `PageUp` |
-| `scroll_down` | `PageDown` |
-| `delete_selected` | `Delete`, `X` |
-| `marker_add` | `M` |
-| `toggle_menu` | `Alt+M` |
-| `show_command_prompt` | `Space` |
-| `rename_item` | `F2` |
-| `divider_add` | `D` |
+| `undo` | `Command+Z`, `U` |
+| `zoom_in` | `Plus`, `Equals` |
+| `zoom_out` | `Minus` |
+| `zoom_to_cursor` | `Shift+Z` |
 | `zoom_to_fit` | `Shift+F` |
-| `go_to_time` | `Command+G` |
-| `focus_variable_name_filter` | `V` |
 
 ## Notes
 
