@@ -2061,12 +2061,15 @@ pub fn wait_for_waves_fully_loaded(state: &mut SystemState, timeout_s: u64) {
 snapshot_ui_with_theme!(theme_dark_high_contrast, "dark-high-contrast");
 snapshot_ui_with_theme!(theme_dark_plus, "dark+");
 snapshot_ui_with_theme!(theme_default, "default");
-snapshot_ui_with_theme!(theme_ibm, "ibm");
+snapshot_ui_with_theme!(theme_ibm, "IBM");
 snapshot_ui_with_theme!(theme_light_high_contrast, "light-high-contrast");
 snapshot_ui_with_theme!(theme_light_plus, "light+");
-snapshot_ui_with_theme!(theme_petroff_dark, "petroff-dark");
-snapshot_ui_with_theme!(theme_petroff_light, "petroff-light");
-snapshot_ui_with_theme!(theme_solarized, "solarized");
+snapshot_ui_with_theme!(theme_petroff_dark, "Petroff Dark");
+snapshot_ui_with_theme!(theme_petroff_light, "Petroff Light");
+snapshot_ui_with_theme!(theme_solarized, "Solarized");
+snapshot_ui_with_theme!(theme_rose_pine, "Rosé Pine");
+snapshot_ui_with_theme!(theme_rose_pine_dawn, "Rosé Pine Dawn");
+snapshot_ui_with_theme!(theme_rose_pine_moon, "Rosé Pine Moon");
 
 snapshot_ui_with_file_and_msgs! {undo_redo_works, "examples/counter.vcd", [
     Message::AddVariables(vec![]),

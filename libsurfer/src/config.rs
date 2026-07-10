@@ -36,27 +36,30 @@ macro_rules! theme {
     };
 }
 
+macro_rules! named_theme {
+    ($name:expr, $file:expr) => {
+        (
+            $name,
+            include_str!(concat!("../../themes/", $file, ".toml")),
+        )
+    };
+}
+
 /// Built-in theme names and their corresponding embedded content
 static BUILTIN_THEMES: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|| {
     HashMap::from([
         theme!("dark+"),
         theme!("dark-high-contrast"),
-        theme!("ibm"),
+        named_theme!("IBM", "ibm"),
         theme!("light+"),
         theme!("light-high-contrast"),
-        ("okabe/ito", include_str!("../../themes/okabe-ito.toml")),
-        theme!("petroff-dark"),
-        theme!("petroff-light"),
-        ("Rosé Pine", include_str!("../../themes/rose-pine.toml")),
-        (
-            "Rosé Pine Moon",
-            include_str!("../../themes/rose-pine-moon.toml"),
-        ),
-        (
-            "Rosé Pine Dawn",
-            include_str!("../../themes/rose-pine-dawn.toml"),
-        ),
-        theme!("solarized"),
+        named_theme!("Okabe/Ito", "okabe-ito"),
+        named_theme!("Petroff Dark", "petroff-dark"),
+        named_theme!("Petroff Light", "petroff-light"),
+        named_theme!("Rosé Pine", "rose-pine"),
+        named_theme!("Rosé Pine Moon", "rose-pine-moon"),
+        named_theme!("Rosé Pine Dawn", "rose-pine-dawn"),
+        named_theme!("Solarized", "solarized"),
     ])
 });
 
@@ -935,23 +938,22 @@ impl VariableIcons {
     }
 }
 
+fn gamma_correction(value: u8) -> f32 {
+    const INV_3294: f32 = 1.0 / 3294.0;
+    const INV_269: f32 = 1.0 / 269.0;
+
+    let v = f32::from(value);
+    if value < 10 {
+        v * INV_3294
+    } else {
+        (v * INV_269 + 0.0513).powf(2.4)
+    }
+}
+
 fn get_luminance(color: Color32) -> f32 {
-    let rg = if color.r() < 10 {
-        f32::from(color.r()) / 3294.0
-    } else {
-        (f32::from(color.r()) / 269.0 + 0.0513).powf(2.4)
-    };
-    let gg = if color.g() < 10 {
-        f32::from(color.g()) / 3294.0
-    } else {
-        (f32::from(color.g()) / 269.0 + 0.0513).powf(2.4)
-    };
-    let bg = if color.b() < 10 {
-        f32::from(color.b()) / 3294.0
-    } else {
-        (f32::from(color.b()) / 269.0 + 0.0513).powf(2.4)
-    };
-    0.2126 * rg + 0.7152 * gg + 0.0722 * bg
+    0.2126 * gamma_correction(color.r())
+        + 0.7152 * gamma_correction(color.g())
+        + 0.0722 * gamma_correction(color.b())
 }
 
 impl SurferTheme {

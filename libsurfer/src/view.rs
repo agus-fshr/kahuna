@@ -753,9 +753,9 @@ impl SystemState {
         let rotation = emath::Rot2::from_angle(if unfolded {
             0.0
         } else if alignment == Align::LEFT {
-            -std::f32::consts::TAU / 4.0
+            -std::f32::consts::PI * 0.5
         } else {
-            std::f32::consts::TAU / 4.0
+            std::f32::consts::PI * 0.5
         });
         for p in &mut points {
             *p = icon_rect.center() + rotation * (*p - icon_rect.center());

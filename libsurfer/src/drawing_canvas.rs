@@ -1647,7 +1647,7 @@ impl SystemState {
         let vec_x = vec_tip.x - vec_start.x;
         let vec_y = vec_tip.y - vec_start.y;
 
-        let alpha = (2. * PI / 360.) * ctx.theme.relation_arrow.head_angle;
+        let alpha = (PI / 180.) * ctx.theme.relation_arrow.head_angle;
 
         // calculate the points of the new vector, which forms an angle of the given degrees with the given vector
         let vec_angled_x = vec_x * alpha.cos() + vec_y * alpha.sin();

@@ -258,4 +258,19 @@ mod tests {
         assert_eq!(labels[1], "b/top.vcd");
         assert_eq!(labels[2], "other.vcd");
     }
+
+    #[test]
+    fn disambiguates_duplicate_file_names_linux() {
+        let paths = vec![
+            Utf8PathBuf::from("/home/user/a/top.vcd"),
+            Utf8PathBuf::from("/home/user/b/top.vcd"),
+            Utf8PathBuf::from("/home/user/c/other.vcd"),
+        ];
+
+        let labels = disambiguated_labels(&paths);
+
+        assert_eq!(labels[0], "a/top.vcd");
+        assert_eq!(labels[1], "b/top.vcd");
+        assert_eq!(labels[2], "other.vcd");
+    }
 }

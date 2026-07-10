@@ -189,7 +189,7 @@ pub fn draw_analog(
 fn draw_building_indicator(offset: f32, height_scaling_factor: f32, ctx: &mut DrawingContext) {
     // Animate dots: cycle through ".", "..", "..." every 333ms
     let elapsed = ctx.painter.ctx().input(|i| i.time);
-    let dot_index = (elapsed / 0.333) as usize % 3;
+    let dot_index = (elapsed * 3.) as usize % 3;
     let text = ["Building.  ", "Building.. ", "Building..."][dot_index];
 
     let row_height = ctx.cfg.line_height * height_scaling_factor;
