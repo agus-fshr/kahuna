@@ -1415,6 +1415,20 @@ impl SystemState {
                 trace_coords(*old_x, 0.5),
             ];
 
+            if self.user.config.layout.draw_vector_unknowns_as_line()
+                && matches!(prev_result.kind, ValueKind::HighImp | ValueKind::Undef)
+            {
+                let stroke = Stroke {
+                    color,
+                    width: self.user.config.theme.linewidth,
+                };
+                ctx.painter.add(PathShape::line(
+                    vec![trace_coords(*old_x, 0.5), trace_coords(*new_x, 0.5)],
+                    stroke,
+                ));
+                return;
+            }
+
             if self.user.config.theme.wide_opacity != 0.0 {
                 // For performance, it might be nice to draw both the background and line with this
                 // call, but using convex_polygon on our polygons create artefacts on thin transitions.
