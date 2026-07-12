@@ -344,6 +344,7 @@ pub enum Message {
     SetPerformanceVisible(bool),
     SetContinuousRedraw(bool),
     SetCursorWindowVisible(bool),
+    SetDrawVectorUnknownsAsLine(bool),
     SetHierarchyStyle(HierarchyStyle),
     SetArrowKeyBindings(ArrowKeyBindings),
     SetPrimaryMouseDragBehavior(PrimaryMouseDrag),

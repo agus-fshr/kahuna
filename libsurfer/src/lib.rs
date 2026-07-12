@@ -1485,6 +1485,9 @@ impl SystemState {
             Message::SetOverviewVisible(v) => self.user.show_overview = Some(v),
             Message::SetShowVariableDirection(v) => self.user.show_variable_direction = Some(v),
             Message::SetTransitionValue(v) => self.user.transition_value = Some(v),
+            Message::SetDrawVectorUnknownsAsLine(v) => {
+                self.user.draw_vector_unknowns_as_line = Some(v)
+            }
             Message::SetShowIndices(v) => {
                 let new = v;
                 self.user.show_variable_indices = Some(new);

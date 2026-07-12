@@ -228,4 +228,11 @@ impl SystemState {
             .align_names_right
             .unwrap_or_else(|| self.user.config.layout.align_names_right())
     }
+
+    #[inline]
+    pub fn draw_vector_unknowns_as_line(&self) -> bool {
+        self.user
+            .draw_vector_unknowns_as_line
+            .unwrap_or_else(|| self.user.config.layout.draw_vector_unknowns_as_line())
+    }
 }

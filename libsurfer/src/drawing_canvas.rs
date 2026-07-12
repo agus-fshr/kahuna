@@ -1415,7 +1415,7 @@ impl SystemState {
                 trace_coords(*old_x, 0.5),
             ];
 
-            if self.user.config.layout.draw_vector_unknowns_as_line()
+            if self.draw_vector_unknowns_as_line()
                 && matches!(prev_result.kind, ValueKind::HighImp | ValueKind::Undef)
             {
                 let stroke = Stroke {

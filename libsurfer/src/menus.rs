@@ -504,11 +504,21 @@ impl SystemState {
                 .then(|| {
                     msgs.push(Message::EnableAnimations(!self.animation_enabled()));
                 });
-            ui.radio(self.show_divider_text(), "Show Divider Text")
+            ui.radio(self.show_divider_text(), "Show divider text")
                 .clicked()
                 .then(|| {
                     msgs.push(Message::ShowDividerText(!self.show_divider_text()));
                 });
+            ui.radio(
+                self.draw_vector_unknowns_as_line(),
+                "Draw vector unknowns as line",
+            )
+            .clicked()
+            .then(|| {
+                msgs.push(Message::SetDrawVectorUnknownsAsLine(
+                    !self.draw_vector_unknowns_as_line(),
+                ));
+            });
             ui.menu_button("Trace style", |ui| {
                 for style in enum_iterator::all::<TraceStyle>() {
                     ui.radio(self.trace_style() == style, style.to_string())

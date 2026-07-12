@@ -3489,3 +3489,13 @@ snapshot_ui_with_file_and_msgs! {divider_text_works, "examples/picorv32.vcd", [
         .into(),
     ),
 ]}
+
+snapshot_ui_with_file_and_msgs! {draw_vector_as_line, "examples/picorv32.vcd", [
+    Message::AddVariables(
+        [
+            VariableRef::from_hierarchy_string("testbench.trace_data"),
+        ]
+        .into(),
+    ),
+    Message::SetDrawVectorUnknownsAsLine(true)
+]}

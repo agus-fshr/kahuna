@@ -138,6 +138,8 @@ pub struct UserState {
     pub(crate) toolbar_group_enabled: HashMap<String, Option<bool>>,
     #[serde(default)]
     pub(crate) toolbar_group_rows: Vec<Vec<String>>,
+    #[serde(default)]
+    pub(crate) draw_vector_unknowns_as_line: Option<bool>,
 
     // Path of last saved-to state file
     // Do not serialize as this causes a few issues and doesn't help:
@@ -235,6 +237,7 @@ impl Default for UserState {
             show_annotation_list: false,
             toolbar_group_enabled: HashMap::new(),
             toolbar_group_rows: Vec::new(),
+            draw_vector_unknowns_as_line: None,
         }
     }
 }
