@@ -48,3 +48,11 @@ repos:
     rev: v10.1.1
     hooks:
     - id: oxipng
+  - repo: local
+    hooks:
+    - id: check-config-docs
+      name: Check config docs
+      entry: python3 tools/check_theme_config_docs.py
+      language: system
+      pass_filenames: false
+      files: ^(default_config\.toml|docs/configuration/config/README\.md)$
