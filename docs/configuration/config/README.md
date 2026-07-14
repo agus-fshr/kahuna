@@ -61,7 +61,7 @@ On native builds, configuration is loaded in this order, with later sources over
 | `show_divider_text` | `false` | boolean | Show divider labels inline in the waveform area. |
 | `max_url_length` | `65534` | integer | Maximum URL length used for remote connections. Useful when a proxy enforces a limit. |
 
-The remaining top-level keys are tables documented below: `default_time_format`, `layout`, `gesture`, `behavior`, `wcp`, `server`, and `shortcuts`.
+The remaining top-level keys are tables documented below: `default_time_format`, `layout`, `gesture`, `behavior`, `wcp`, `plugin`, `server`, and `shortcuts`.
 
 ## `[default_time_format]`
 
@@ -191,6 +191,7 @@ Controls a small set of interaction defaults.
 | Key | Default | Values | Description |
 | --- | --- | --- | --- |
 | `keep_during_reload` | `true` | boolean | Keep variables/items when they are unavailable after a reload. |
+| `file_history_size` | `10` | integer | Maximum number of entries to keep in the recent file history. |
 | `arrow_key_bindings` | `"Edge"` | `Edge`, `Scroll` | Make left/right arrow keys jump between edges or scroll the viewport. |
 | `primary_button_drag_behavior` | `"Cursor"` | `Cursor`, `Measure` | Default behavior for primary-button dragging. Holding Shift temporarily selects the other mode. |
 
@@ -202,6 +203,14 @@ Waveform Control Protocol server settings.
 | --- | --- | --- | --- |
 | `autostart` | `false` | boolean | Start the WCP server automatically on launch. |
 | `address` | `"127.0.0.1:54321"` | `host:port` string | Bind address for the WCP server. |
+
+## `[plugin]`
+
+Settings for waveform translator plugins.
+
+| Key | Default | Values | Description |
+| --- | --- | --- | --- |
+| `max_memory_mib` | `10` | positive integer | Maximum memory budget in MiB available to each WASM translator plugin. Increase this if a plugin fails due to memory limits. |
 
 ## `[server]`
 

@@ -36,6 +36,14 @@ repos:
              "-W", "clippy::correctness",
              "-W", "clippy::suspicious",
              ]
+  - repo: local
+    hooks:
+    - id: check-command-docs
+      name: Check command docs
+      entry: python tools/check_command_docs.py
+      language: system
+      pass_filenames: false
+      files: ^(libsurfer/src/command_parser\.rs|docs/commands/README\.md|tools/check_command_docs\.py)$
   - repo: https://github.com/shssoichiro/oxipng
     rev: v10.1.1
     hooks:
