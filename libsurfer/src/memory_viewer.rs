@@ -4,6 +4,7 @@ use crate::{
     translation::{TranslationResultExt, ValueKindExt},
     wave_container::ScopeRefExt,
 };
+use egui::DragValue;
 use egui_extras::{Column, TableBuilder};
 use std::rc::Rc;
 use surfer_translation_types::{TranslationPreference, Translator, ValueKind};
@@ -34,6 +35,8 @@ impl Default for MemoryViewerState {
             value_format: "Hexadecimal".to_string(),
             scroll_to_row: None,
             color_values: false,
+            selected_value_position: None,
+            value_column_count: 1,
             change_display_modes: ChangeModes::AllValues,
         }
     }
@@ -282,43 +285,68 @@ impl SystemState {
                 ui.label(format!("Structured entries: {}", rows.len()));
 
                 ui.separator();
+                ui.horizontal(|ui| {
+                    ui.checkbox(&mut self.memory_viewer.color_values, "Color values");
 
-                egui::CollapsingHeader::new("View Options")
-                    .default_open(false)
-                    .show(ui, |ui| {
-                        ui.checkbox(&mut self.memory_viewer.color_values, "Color values");
+                    if self.memory_viewer.value_column_count == 1 {
+                        ui.separator();
+                        ui.label("Filter:");
 
-                        ui.radio_value(
+                        let selected_text = match self.memory_viewer.change_display_modes {
+                            ChangeModes::AllValues => "All values",
+                            ChangeModes::ChangedAtCursor => "Changed at cursor",
+                            ChangeModes::ChangedBtwCursorAndMarker(_) => {
+                                "Changed between cursor and marker"
+                            }
+                        };
+
+                        egui::ComboBox::from_id_salt("memory_viewer_filter")
+                            .selected_text(selected_text)
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(
+                                    &mut self.memory_viewer.change_display_modes,
+                                    ChangeModes::AllValues,
+                                    "All values",
+                                );
+
+                                ui.selectable_value(
+                                    &mut self.memory_viewer.change_display_modes,
+                                    ChangeModes::ChangedAtCursor,
+                                    "Changed at cursor",
+                                );
+
+                                let marker_index = match self.memory_viewer.change_display_modes {
+                                    ChangeModes::ChangedBtwCursorAndMarker(index) => index,
+                                    _ => 1,
+                                };
+
+                                ui.selectable_value(
+                                    &mut self.memory_viewer.change_display_modes,
+                                    ChangeModes::ChangedBtwCursorAndMarker(marker_index),
+                                    "Changed between cursor and marker",
+                                );
+                            });
+                    }
+                });
+
+                if self.memory_viewer.value_column_count == 1
+                    && matches!(
+                        self.memory_viewer.change_display_modes,
+                        ChangeModes::ChangedBtwCursorAndMarker(_)
+                    )
+                {
+                    ui.horizontal(|ui| {
+                        ui.label("Marker:");
+
+                        marker_combo(
+                            ui,
+                            "memory_viewer_marker",
                             &mut self.memory_viewer.change_display_modes,
-                            ChangeModes::AllValues,
-                            "Show all values",
                         );
-                        ui.radio_value(
-                            &mut self.memory_viewer.change_display_modes,
-                            ChangeModes::ChangedAtCursor,
-                            "Show changed values at current cursor",
-                        );
-                        ui.horizontal(|ui| {
-                            let marker_index = match self.memory_viewer.change_display_modes {
-                                ChangeModes::ChangedBtwCursorAndMarker(index) => index,
-                                _ => 1,
-                            };
-
-                            ui.radio_value(
-                                &mut self.memory_viewer.change_display_modes,
-                                ChangeModes::ChangedBtwCursorAndMarker(marker_index),
-                                "Show changed rows between cursor and",
-                            );
-                            marker_combo(
-                                ui,
-                                "memory_viewer_marker",
-                                &mut self.memory_viewer.change_display_modes,
-                            );
-                        });
                     });
+                }
 
                 ui.separator();
-
                 ui.horizontal(|ui| {
                     ui.label("Index format:");
                     egui::ComboBox::from_id_salt("memory_viewer_index_format")
@@ -409,12 +437,17 @@ impl SystemState {
                         jump_requested = true;
                     }
 
-                    ui.label("Filter:");
-                    ui.add_sized(
-                        [90.0, 20.0],
-                        egui::TextEdit::singleline(&mut self.memory_viewer.search_value),
+                    ui.label("Columns:");
+
+                    ui.add(
+                        DragValue::new(&mut self.memory_viewer.value_column_count).range(1..=32),
                     );
 
+                    if self.memory_viewer.value_column_count > 1 {
+                        self.memory_viewer.change_display_modes = ChangeModes::AllValues;
+                    }
+
+                    ui.separator();
                     ui.separator();
                 });
 
@@ -447,75 +480,184 @@ impl SystemState {
                         value == search_value || value.contains(&search_value)
                     })
                     .collect();
-
-                if jump_requested
-                    && let Some(target_index) =
-                        parse_jump_to_index(&self.memory_viewer.jump_to_index)
-                {
-                    self.memory_viewer.scroll_to_row =
-                        closest_row_index(&visible_rows, target_index);
-                }
-
                 let max_index = rows.iter().map(|row| row.index).max().unwrap_or(0);
-
                 let text_height = egui::TextStyle::Body
                     .resolve(ui.style())
                     .size
                     .max(ui.spacing().interact_size.y);
 
-                let available_height = ui.available_height().max(250.0);
-
-                let mut table = TableBuilder::new(ui)
-                    .striped(true)
-                    .resizable(true)
-                    .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-                    .column(Column::auto())
-                    .column(Column::remainder())
-                    .min_scrolled_height(150.0)
-                    .max_scroll_height(available_height);
-
-                if let Some(row_index) = self.memory_viewer.scroll_to_row.take() {
-                    table = table.scroll_to_row(row_index, Some(egui::Align::Min));
+                // let available_height = ui.available_height().max(250.0);
+                let value_column_count = self
+                    .memory_viewer
+                    .value_column_count
+                    .clamp(1, visible_rows.len().max(1));
+                self.memory_viewer.value_column_count = value_column_count;
+                let table_rows = visible_rows.len().div_ceil(value_column_count);
+                if jump_requested
+                    && let Some(target_index) =
+                        parse_jump_to_index(&self.memory_viewer.jump_to_index)
+                    && let Some(value_position) = closest_row_index(&visible_rows, target_index)
+                {
+                    self.memory_viewer.selected_value_position = Some(value_position);
+                    self.memory_viewer.scroll_to_row = Some(value_position / value_column_count);
                 }
+                let table_width = ui.available_width();
+                let table_height = ui.available_height();
+                let horizontal_jump_target = if jump_requested {
+                    self.memory_viewer.selected_value_position
+                } else {
+                    None
+                };
+                ui.allocate_ui_with_layout(
+                    egui::vec2(table_width, table_height),
+                    egui::Layout::top_down(egui::Align::LEFT),
+                    |ui| {
+                        egui::ScrollArea::horizontal()
+                            .auto_shrink([false, true])
+                            .show(ui, |ui| {
+                                let mut table = TableBuilder::new(ui)
+                                    .striped(true)
+                                    .resizable(true)
+                                    .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+                                    .column(Column::auto());
 
-                table
-                    .header(24.0, |mut header| {
-                        header.col(|ui| {
-                            ui.monospace("Index");
-                        });
-                        header.col(|ui| {
-                            ui.monospace("Value");
-                        });
-                    })
-                    .body(|body| {
-                        body.rows(text_height, visible_rows.len(), |mut row| {
-                            let row_index = row.index();
-                            let row_data = visible_rows[row_index];
-
-                            row.col(|ui| {
-                                ui.monospace(format_index(
-                                    row_data.index,
-                                    self.memory_viewer.index_format,
-                                    max_index,
-                                ));
-                            });
-
-                            row.col(|ui| {
-                                if self.memory_viewer.color_values {
-                                    let color = row_data.kind.color(
-                                        self.user.config.theme.variable_default,
-                                        &self.user.config.theme,
-                                    );
-                                    ui.horizontal(|ui| {
-                                        ui.colored_label(color, "■");
-                                        ui.monospace(&row_data.value);
-                                    });
-                                } else {
-                                    ui.monospace(&row_data.value);
+                                for _ in 0..value_column_count {
+                                    table = table.column(Column::auto());
                                 }
+
+                                if let Some(row_index) = self.memory_viewer.scroll_to_row.take() {
+                                    table =
+                                        table.scroll_to_row(row_index, Some(egui::Align::Center));
+                                }
+                                table
+                                    .header(24.0, |mut header| {
+                                        header.col(|ui| {
+                                            ui.monospace("Index");
+                                        });
+
+                                        for column_index in 0..value_column_count {
+                                            header.col(|ui| {
+                                                if column_index == 0 {
+                                                    ui.monospace("Value");
+                                                } else {
+                                                    ui.monospace(format!("+{column_index}"));
+                                                }
+                                            });
+                                        }
+                                    })
+                                    .body(|body| {
+                                        body.rows(text_height, table_rows, |mut row| {
+                                            let table_row_index = row.index();
+                                            let row_start = table_row_index * value_column_count;
+
+                                            let Some(first_row_data) = visible_rows.get(row_start)
+                                            else {
+                                                return;
+                                            };
+
+                                            row.col(|ui| {
+                                                ui.monospace(format_index(
+                                                    first_row_data.index,
+                                                    self.memory_viewer.index_format,
+                                                    max_index,
+                                                ));
+                                            });
+
+                                            for column_index in 0..value_column_count {
+                                                row.col(|ui| {
+                                                    let value_index = row_start + column_index;
+
+                                                    let Some(row_data) =
+                                                        visible_rows.get(value_index)
+                                                    else {
+                                                        return;
+                                                    };
+
+                                                    let is_selected =
+                                                        self.memory_viewer.selected_value_position
+                                                            == Some(value_index);
+
+                                                    let frame = if is_selected {
+                                                        egui::Frame::NONE
+                                                            .fill(
+                                                                self.user
+                                                                    .config
+                                                                    .theme
+                                                                    .accent_info
+                                                                    .background,
+                                                            )
+                                                            .inner_margin(egui::Margin::symmetric(
+                                                                4, 1,
+                                                            ))
+                                                    } else if row_data.changed_values {
+                                                        egui::Frame::NONE
+                                                            .fill(
+                                                                self.user
+                                                                    .config
+                                                                    .theme
+                                                                    .selected_elements_colors
+                                                                    .background,
+                                                            )
+                                                            .inner_margin(egui::Margin::symmetric(
+                                                                4, 1,
+                                                            ))
+                                                    } else {
+                                                        egui::Frame::NONE.inner_margin(
+                                                            egui::Margin::symmetric(4, 1),
+                                                        )
+                                                    };
+
+                                                    let frame_response = frame.show(ui, |ui| {
+                                                        if is_selected {
+                                                            ui.visuals_mut().override_text_color =
+                                                                Some(
+                                                                    self.user
+                                                                        .config
+                                                                        .theme
+                                                                        .accent_info
+                                                                        .foreground,
+                                                                );
+                                                        } else if row_data.changed_values {
+                                                            ui.visuals_mut().override_text_color =
+                                                                Some(
+                                                                    self.user
+                                                                        .config
+                                                                        .theme
+                                                                        .selected_elements_colors
+                                                                        .foreground,
+                                                                );
+                                                        }
+
+                                                        if self.memory_viewer.color_values {
+                                                            let color = row_data.kind.color(
+                                                                self.user
+                                                                    .config
+                                                                    .theme
+                                                                    .variable_default,
+                                                                &self.user.config.theme,
+                                                            );
+
+                                                            ui.horizontal(|ui| {
+                                                                ui.colored_label(color, "■");
+                                                                ui.monospace(&row_data.value);
+                                                            });
+                                                        } else {
+                                                            ui.monospace(&row_data.value);
+                                                        }
+                                                    });
+                                                    if horizontal_jump_target == Some(value_index) {
+                                                        ui.scroll_to_rect(
+                                                            frame_response.response.rect,
+                                                            Some(egui::Align::Center),
+                                                        );
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    });
                             });
-                        });
-                    });
+                    },
+                );
             });
 
         self.memory_viewer.open = open;

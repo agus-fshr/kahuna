@@ -41,6 +41,8 @@ pub struct MemoryViewerState {
     pub scroll_to_row: Option<usize>,
     pub color_values: bool,
     pub change_display_modes: ChangeModes,
+    pub value_column_count: usize,
+    pub selected_value_position: Option<usize>,
 }
 
 pub struct SystemState {
