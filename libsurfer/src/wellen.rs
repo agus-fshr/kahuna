@@ -212,7 +212,7 @@ impl WellenContainer {
             BodyResult::Remote(time_table, server) => {
                 if let Some(old) = &self.server {
                     if old != &server {
-                        bail!("Inconsistent server URLs: {old} vs. {server}")
+                        bail!("Inconsistent server URLs: {old} vs. {server}");
                     }
                 } else {
                     bail!("Missing server URL!");

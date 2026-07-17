@@ -22,7 +22,7 @@ macro_rules! expect_response {
                 result
             }
             _ = tokio::time::sleep(std::time::Duration::from_secs(1)) => {
-                bail!("Timeout waiting for {}", stringify!($expected))
+                bail!("Timeout waiting for {}", stringify!($expected));
             }
         };
 
@@ -30,7 +30,7 @@ macro_rules! expect_response {
             bail!(
                 "Got unexpected response {received:?} expected {}",
                 stringify!(expected)
-            )
+            );
         };
     };
 }

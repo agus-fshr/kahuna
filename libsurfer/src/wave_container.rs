@@ -420,7 +420,9 @@ impl WaveContainer {
     ) -> Result<Option<LoadSignalsCmd>> {
         match self {
             WaveContainer::Wellen(f) => f.load_variables(variables),
-            WaveContainer::Empty => bail!("Cannot load variables from empty container."),
+            WaveContainer::Empty => {
+                bail!("Cannot load variables from empty container.");
+            }
             WaveContainer::Cxxrtl(c) => {
                 c.get_mut().unwrap().load_variables(variables);
                 Ok(None)
@@ -431,7 +433,9 @@ impl WaveContainer {
     pub fn load_parameters(&mut self) -> Result<Option<LoadSignalsCmd>> {
         match self {
             WaveContainer::Wellen(f) => f.load_all_params(),
-            WaveContainer::Empty => bail!("Cannot load parameters from empty container."),
+            WaveContainer::Empty => {
+                bail!("Cannot load parameters from empty container.");
+            }
             WaveContainer::Cxxrtl(_) => {
                 // Cxxrtl does not deal with parameters
                 Ok(None)
@@ -445,10 +449,10 @@ impl WaveContainer {
         match self {
             WaveContainer::Wellen(f) => f.on_signals_loaded(res),
             WaveContainer::Empty => {
-                bail!("on_load_signals should only be called with the wellen backend.")
+                bail!("on_load_signals should only be called with the wellen backend.");
             }
             WaveContainer::Cxxrtl(_) => {
-                bail!("on_load_signals should only be called with the wellen backend.")
+                bail!("on_load_signals should only be called with the wellen backend.");
             }
         }
     }
@@ -456,7 +460,9 @@ impl WaveContainer {
     pub fn variable_meta<'a>(&'a self, variable: &'a VariableRef) -> Result<VariableMeta> {
         match self {
             WaveContainer::Wellen(f) => f.variable_to_meta(variable),
-            WaveContainer::Empty => bail!("Getting meta from empty wave container"),
+            WaveContainer::Empty => {
+                bail!("Getting meta from empty wave container");
+            }
             WaveContainer::Cxxrtl(c) => c.lock().unwrap().variable_meta(variable),
         }
     }
@@ -471,7 +477,9 @@ impl WaveContainer {
     ) -> Result<Option<QueryResult>> {
         match self {
             WaveContainer::Wellen(f) => f.query_variable(variable, time),
-            WaveContainer::Empty => bail!("Querying variable from empty wave container"),
+            WaveContainer::Empty => {
+                bail!("Querying variable from empty wave container");
+            }
             WaveContainer::Cxxrtl(c) => Ok(c.lock().unwrap().query_variable(variable, time)),
         }
     }
@@ -481,15 +489,21 @@ impl WaveContainer {
             (WaveContainer::Wellen(f), SignalId::Wellen(signal_ref)) => {
                 Ok(SignalAccessor::Wellen(f.signal_accessor(signal_ref)?))
             }
-            _ => bail!("Invalid signal accessor combination"),
+            _ => {
+                bail!("Invalid signal accessor combination");
+            }
         }
     }
     /// Get the `SignalId` for a variable (canonical signal identity for cache keys)
     pub fn signal_id(&self, variable: &VariableRef) -> Result<SignalId> {
         match self {
             WaveContainer::Wellen(f) => Ok(SignalId::Wellen(f.signal_ref(variable)?)),
-            WaveContainer::Empty => bail!("No signal data"),
-            WaveContainer::Cxxrtl(_) => bail!("Not supported for Cxxrtl yet"),
+            WaveContainer::Empty => {
+                bail!("No signal data");
+            }
+            WaveContainer::Cxxrtl(_) => {
+                bail!("Not supported for Cxxrtl yet");
+            }
         }
     }
 
@@ -578,7 +592,9 @@ impl WaveContainer {
     pub fn child_scopes(&self, scope: &ScopeRef) -> Result<Vec<ScopeRef>> {
         match self {
             WaveContainer::Wellen(f) => f.child_scopes(scope),
-            WaveContainer::Empty => bail!("Getting child modules from empty wave container"),
+            WaveContainer::Empty => {
+                bail!("Getting child modules from empty wave container");
+            }
             WaveContainer::Cxxrtl(c) => Ok(c.lock().unwrap().child_scopes(scope)),
         }
     }
@@ -683,7 +699,7 @@ impl WaveContainer {
         match self {
             WaveContainer::Wellen(inner) => inner.add_body(body),
             _ => {
-                bail!("Should never call this function on a non wellen container!")
+                bail!("Should never call this function on a non wellen container!");
             }
         }
     }

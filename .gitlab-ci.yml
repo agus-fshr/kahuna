@@ -489,6 +489,24 @@ pages_preview:
         url: https://${CI_PROJECT_NAMESPACE}.gitlab.io/-/${CI_PROJECT_NAME}/-/jobs/${CI_JOB_ID}/artifacts/public/index.html
         on_stop: pages_preview_stop
 
+rustsec-audit:
+  stage: test
+  image: rust:latest
+  cache:
+    key: cargo-audit
+    paths:
+      - .cargo/bin/cargo-audit
+    when: always
+  before_script:
+    - export CARGO_HOME="${CI_PROJECT_DIR}/.cargo"
+    - which cargo-audit || cargo install cargo-audit --locked
+  script:
+    - cargo audit
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule"
 
 pages_preview_stop:
   stage: deploy
