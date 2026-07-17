@@ -492,6 +492,7 @@ pages_preview:
 rustsec-audit:
   stage: test
   image: rust:latest
+  allow_failure: true
   cache:
     key: cargo-audit
     paths:
@@ -499,10 +500,10 @@ rustsec-audit:
     when: always
   before_script:
     - export CARGO_HOME="${CI_PROJECT_DIR}/.cargo"
-    - which cargo-audit || cargo install cargo-audit --locked
+    - export PATH="${CARGO_HOME}/bin:${PATH}"
   script:
+    - cargo install cargo-audit --locked --force
     - cargo audit
-  allow_failure: true
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
