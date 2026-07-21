@@ -328,10 +328,19 @@ impl SystemState {
                 .add_closing_menu(msgs, ui);
             ui.menu_button("Theme", |ui| {
                 ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                b("Default theme", Message::SelectTheme(None)).add_closing_menu(msgs, ui);
+                ui.radio(
+                    self.user.config.theme.theme_name.is_empty(),
+                    "Default theme",
+                )
+                .clicked()
+                .then(|| msgs.push(Message::SelectTheme(None)));
                 for theme_name in self.user.config.theme.theme_names.clone() {
-                    b(theme_name.clone(), Message::SelectTheme(Some(theme_name)))
-                        .add_closing_menu(msgs, ui);
+                    ui.radio(
+                        self.user.config.theme.theme_name == theme_name,
+                        theme_name.clone(),
+                    )
+                    .clicked()
+                    .then(|| msgs.push(Message::SelectTheme(Some(theme_name))));
                 }
             });
             ui.menu_button("UI zoom factor", |ui| {

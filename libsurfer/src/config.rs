@@ -621,6 +621,10 @@ pub struct SurferTheme {
     /// List of theme names
     pub theme_names: Vec<String>,
 
+    /// The name of the currently selected theme, or empty for the default theme
+    #[serde(default)]
+    pub theme_name: String,
+
     /// Icons for scope types in the hierarchy view
     #[serde(default)]
     pub scope_icons: ScopeIcons,
@@ -1017,20 +1021,24 @@ impl SurferTheme {
 
     #[cfg(target_arch = "wasm32")]
     pub fn new(theme_name: Option<String>) -> Result<Self> {
+        let theme_name = theme_name.filter(|s| !s.is_empty());
         let (theme, _) = Self::generate_defaults(theme_name.as_ref());
 
         let theme = theme.set_override("theme_names", all_theme_names())?;
 
-        theme
+        let mut result: SurferTheme = theme
             .build()?
             .try_deserialize()
-            .map_err(|e| anyhow!("Failed to parse config {e}"))
+            .map_err(|e| anyhow!("Failed to parse config {e}"))?;
+        result.theme_name = theme_name.unwrap_or_default();
+        Ok(result)
     }
 
     #[cfg(not(target_arch = "wasm32"))]
     pub fn new(theme_name: Option<String>) -> Result<Self> {
         use std::fs::ReadDir;
 
+        let theme_name = theme_name.filter(|s| !s.is_empty());
         let (mut theme, mut theme_names) = Self::generate_defaults(theme_name.as_ref());
 
         let mut add_themes_from_dir = |dir: ReadDir| {
@@ -1093,10 +1101,12 @@ impl SurferTheme {
 
         let theme = theme.set_override("theme_names", theme_names)?;
 
-        theme
+        let mut result: SurferTheme = theme
             .build()?
             .try_deserialize()
-            .map_err(|e| anyhow!("Failed to parse theme {e}"))
+            .map_err(|e| anyhow!("Failed to parse theme {e}"))?;
+        result.theme_name = theme_name.unwrap_or_default();
+        Ok(result)
     }
 }
 
