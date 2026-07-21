@@ -7,8 +7,8 @@ use std::{
 
 use crate::{arrow::WavePoint, graphics::Anchor};
 use base64::{Engine, engine::general_purpose};
-use egui::{Pos2, Rect};
-use egui_skia_renderer::{EncodedImageFormat, create_surface, draw_onto_surface};
+use egui::{Event, Modifiers, PointerButton, Pos2, RawInput, Rect};
+use egui_skia_renderer::{EguiSkia, EncodedImageFormat, create_surface, draw_onto_surface};
 use emath::Vec2;
 use ftr_parser::types::{GeneratorId, StreamId, TransactionId};
 use image::{DynamicImage, ImageFormat};
@@ -53,6 +53,76 @@ fn print_image(img: &DynamicImage) {
             "\x1b]1337;File=size={size};width=auto;height=auto;inline=1:{b64}\x1b]\x1b[1E",
             size = bytes.len()
         );
+    }
+}
+
+/// Compare a rendered image against the stored snapshot, writing a new snapshot
+/// and diff if they differ.  Shared by [`render_and_compare_inner`] and tests
+/// that need custom rendering (e.g. injecting pointer events to open menus).
+fn compare_with_snapshot(filename: &Path, new: &DynamicImage) {
+    let root = get_project_root().expect("Failed to get root");
+    let previous_image_file = root.join("snapshots").join(filename).with_extension("png");
+
+    let (write_new_file, diff) = if previous_image_file.exists() {
+        let prev = image::open(previous_image_file.clone()).unwrap_or_else(|_| {
+            panic!("Failed to load previous image from {previous_image_file:?}")
+        });
+        let result =
+            image_compare::rgb_hybrid_compare(&new.clone().into_rgb8(), &prev.clone().into_rgb8())
+                .expect("Comparison failing");
+        let (score, map) = (result.score, result.image);
+        (score <= 0.99999, Some((score, map)))
+    } else {
+        (true, None)
+    };
+
+    let new_file = root
+        .join("snapshots")
+        .join(filename)
+        .with_extension("new.png");
+
+    if new_file.exists() {
+        std::fs::remove_file(&new_file).expect("Failed to remove existing snapshot file");
+    }
+    if write_new_file {
+        std::fs::create_dir_all("snapshots").expect("Failed to create snapshots dir");
+        new.write_to(
+            &mut File::create(&new_file)
+                .unwrap_or_else(|_| panic!("Failed to create {new_file:?}")),
+            ImageFormat::Png,
+        )
+        .unwrap_or_else(|_| panic!("Failed to write new image to {new_file:?}"));
+    }
+
+    match (write_new_file, diff) {
+        (true, Some((score, map))) => {
+            let diff_img = map.to_color_map();
+            let diff_file = root
+                .join("snapshots")
+                .join(filename)
+                .with_extension("diff.png");
+            diff_img
+                .save(diff_file.clone())
+                .unwrap_or_else(|_| panic!("Failed to save diff file to {diff_file:?}"));
+
+            let prev = image::open(previous_image_file.clone()).unwrap_or_else(|_| {
+                panic!("Failed to load previous image from {previous_image_file:?}")
+            });
+            println!("Previous: {previous_image_file:?}");
+            print_image(&prev);
+            println!("New: {new_file:?}");
+            print_image(new);
+            println!("Diff: {diff_file:?}");
+            print_image(&diff_img);
+            panic!(
+                "Snapshot diff. Score: {score}\n\told: {previous_image_file:?}\n\tnew: {new_file:?}"
+            )
+        }
+        (true, None) => {
+            print_image(new);
+            panic!("New snapshot image (saved to {new_file:?})")
+        }
+        (false, _) => {}
     }
 }
 
@@ -3499,3 +3569,139 @@ snapshot_ui_with_file_and_msgs! {draw_vector_as_line, "examples/picorv32.vcd", [
     ),
     Message::SetDrawVectorUnknownsAsLine(true)
 ]}
+
+/// Snapshot test showing the Theme submenu open with radio buttons.
+///
+/// The standard `snapshot_ui!` / `draw_onto_surface` helpers can't open menus
+/// because they don't inject pointer events.  This test uses `EguiSkia`
+/// directly so we can click "View" then hover "Theme" to open the submenu,
+/// revealing the radio button on the selected theme.
+#[test]
+fn theme_menu_radio_button() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap();
+    let _enter = runtime.enter();
+    std::thread::spawn(move || {
+        runtime.block_on(async {
+            loop {
+                tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
+            }
+        });
+    });
+
+    let mut state = SystemState::new_default_config()
+        .unwrap()
+        .with_params(StartupParams {
+            waves: Some(WaveSource::File(
+                get_project_root()
+                    .unwrap()
+                    .join("examples/counter.vcd")
+                    .try_into()
+                    .unwrap(),
+            )),
+            ..Default::default()
+        });
+    wait_for_waves_fully_loaded(&mut state, 10);
+
+    // Select a non-default theme so the radio button is visible on it.
+    state.update(Message::SelectTheme(Some("light+".to_string())));
+    state.user.show_menu = Some(true);
+    state.user.show_statusbar = Some(false);
+    state.user.show_default_timeline = Some(false);
+
+    let screen_rect = Rect::from_min_size(Pos2::ZERO, SNAPSHOT_SIZE);
+    let mut surface = create_surface((SNAPSHOT_WIDTH as i32, SNAPSHOT_HEIGHT as i32));
+    surface.canvas().clear(egui_skia_renderer::Color::BLACK);
+
+    let mut backend = EguiSkia::new(1.0);
+    let mut frame = 0u32;
+
+    backend.run(
+        RawInput {
+            screen_rect: Some(screen_rect),
+            ..Default::default()
+        },
+        |ui| {
+            ui.set_visuals(state.get_visuals());
+            setup_custom_font(ui.ctx());
+            let msgs = state.draw(ui, Some(SNAPSHOT_SIZE));
+            for msg in msgs {
+                if matches!(msg, Message::BuildAnalogCache { .. }) {
+                    state.update(msg);
+                }
+            }
+            frame += 1;
+        },
+    );
+
+    // Frame 2: click "View" to open the dropdown.
+    let view_pos = Pos2::new(50.0, 10.0);
+    backend.run(
+        RawInput {
+            screen_rect: Some(screen_rect),
+            events: vec![
+                Event::PointerMoved(view_pos),
+                Event::PointerButton {
+                    pos: view_pos,
+                    button: PointerButton::Primary,
+                    pressed: true,
+                    modifiers: Modifiers::default(),
+                },
+                Event::PointerButton {
+                    pos: view_pos,
+                    button: PointerButton::Primary,
+                    pressed: false,
+                    modifiers: Modifiers::default(),
+                },
+            ],
+            ..Default::default()
+        },
+        |ui| {
+            ui.set_visuals(state.get_visuals());
+            setup_custom_font(ui.ctx());
+            let msgs = state.draw(ui, Some(SNAPSHOT_SIZE));
+            for msg in msgs {
+                if matches!(msg, Message::BuildAnalogCache { .. }) {
+                    state.update(msg);
+                }
+            }
+        },
+    );
+
+    // Frames 3-6: hover over "Theme" to open the submenu (no click, so the
+    // View dropdown stays open).  "Theme" is near the bottom of the View
+    // dropdown at approximately y=365.
+    let theme_pos = Pos2::new(50.0, 365.0);
+    for _ in 0..4 {
+        backend.run(
+            RawInput {
+                screen_rect: Some(screen_rect),
+                events: vec![Event::PointerMoved(theme_pos)],
+                ..Default::default()
+            },
+            |ui| {
+                ui.set_visuals(state.get_visuals());
+                setup_custom_font(ui.ctx());
+                let msgs = state.draw(ui, Some(SNAPSHOT_SIZE));
+                for msg in msgs {
+                    if matches!(msg, Message::BuildAnalogCache { .. }) {
+                        state.update(msg);
+                    }
+                }
+            },
+        );
+    }
+
+    backend.paint(surface.canvas());
+
+    let data = surface
+        .image_snapshot()
+        .encode(None, EncodedImageFormat::PNG, None)
+        .expect("Failed to encode image");
+    let new = image::load_from_memory(&data).expect("Failed to decode png");
+
+    compare_with_snapshot(&PathBuf::from("theme_menu_radio_button"), &new);
+}

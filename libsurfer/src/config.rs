@@ -1215,7 +1215,9 @@ fn hex_string_to_color32(str: &str) -> Result<Color32> {
 }
 
 fn all_theme_names() -> Vec<String> {
-    BUILTIN_THEMES.keys().map(ToString::to_string).collect()
+    let mut names: Vec<String> = BUILTIN_THEMES.keys().map(ToString::to_string).collect();
+    names.sort();
+    names
 }
 
 fn deserialize_hex_color<'de, D>(deserializer: D) -> Result<Color32, D::Error>
