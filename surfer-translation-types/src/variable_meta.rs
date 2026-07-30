@@ -25,8 +25,9 @@ pub struct VariableMeta<VarId, ScopeId> {
     /// For enum variables, either an enumerated type in VHDL or an enum in SystemVerilog,
     /// a mapping from enum option names to their string representations.
     pub enum_map: HashMap<String, String>,
-    /// Indicates how the variable is stored. A variable of "type" boolean for example
-    /// could be stored as a `String` or as a `BitVector`.
+    /// Indicates how the variable is stored.
+    ///
+    /// For example, a variable of "type" boolean can be stored as a `String` or as a `BitVector`.
     pub encoding: VariableEncoding,
 }
 

@@ -36,7 +36,9 @@ pub struct FileGroup {
     file: Option<String>,
 }
 
-/// Starts the logging and error handling. Can be used by unittests to get more insights.
+/// Starts the logging and error handling.
+///
+/// Can be used by unittests to get more insights.
 pub fn start_logging() -> Result<()> {
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into());
     let subscriber = Registry::default().with(

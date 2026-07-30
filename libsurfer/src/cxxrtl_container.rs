@@ -91,9 +91,11 @@ impl<T> CachedData<T>
 where
     T: Clone,
 {
-    /// Return the current value from the cache if it is there. If the cache is
-    /// Uncached run `f` to fetch the new value. The function must make sure that
-    /// the cache is updated eventually. The state is changed to `Waiting`
+    /// Return the current value from the cache if it is there.
+    ///
+    /// If the cache is `Uncached` run `f` to fetch the new value.
+    /// The function must make sure that the cache is updated eventually.
+    /// The state is changed to `Waiting`
     fn fetch_if_needed(&mut self, f: impl FnOnce()) -> Option<Arc<T>> {
         if let CachedData::Uncached { .. } = self {
             f();
@@ -373,9 +375,11 @@ impl CxxrtlContainer {
             .unwrap_or_else(|| Arc::new(HashMap::new()))
     }
 
-    /// Fetches the details on a specific item. For now, this fetches *all* items, but looks
-    /// up the specific item before returning. This is done in order to not have to return
-    /// the whole Item list since we need to lock the data structure to get that.
+    /// Fetches the details on a specific item.
+    ///
+    /// For now, this fetches *all* items, but looks up the specific item before returning.
+    /// This is done in order to not have to return the whole Item list since
+    /// we need to lock the data structure to get that.
     fn fetch_item(&mut self, var: &VariableRef) -> Option<CxxrtlItem> {
         self.data
             .all_items_cache

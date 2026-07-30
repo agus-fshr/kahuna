@@ -156,7 +156,9 @@ impl SystemState {
     }
 }
 
-/// Starts the logging and error handling. Can be used by unittests to get more insights.
+/// Starts the logging and error handling.
+///
+/// Can be used by unittests to get more insights.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn start_logging() -> Result<()> {
     use std::io::stdout;
@@ -179,7 +181,9 @@ pub fn start_logging() -> Result<()> {
     Ok(())
 }
 
-/// Starts the logging and error handling. Can be used by unittests to get more insights.
+/// Starts the logging and error handling.
+///
+/// Can be used by unittests to get more insights.
 #[cfg(target_arch = "wasm32")]
 pub fn start_logging() -> Result<()> {
     use tracing_subscriber::{Registry, fmt, layer::SubscriberExt};

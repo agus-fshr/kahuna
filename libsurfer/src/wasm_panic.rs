@@ -50,8 +50,9 @@ fn panic_hook(info: &panic::PanicHookInfo) {
     };
 }
 
-/// Set the `console.error` panic hook the first time this is called. Subsequent
-/// invocations do nothing.
+/// Set the `console.error` panic hook the first time this is called.
+///
+/// Subsequent invocations do nothing.
 #[inline]
 #[cfg(target_arch = "wasm32")]
 pub fn set_once() {

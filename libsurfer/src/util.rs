@@ -75,9 +75,10 @@ pub(crate) fn get_alpha_focus_id(vidx: VisibleItemIndex, waves: &WaveData) -> Ri
     RichText::new(alpha_id).monospace()
 }
 
-/// This function searches upward from `start` for directories or files matching `item`. It returns
-/// a `Vec<PathBuf>` to all found instances in order of closest to furthest away. The function only
-/// searches up within subdirectories of `end`.
+/// This function searches upward from `start` for directories or files matching `item`.
+///
+/// It returns a `Vec<PathBuf>` to all found instances in order of closest to furthest away.
+/// The function only searches up within subdirectories of `end`.
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn search_upward(
     start: impl AsRef<Path>,

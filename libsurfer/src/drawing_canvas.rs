@@ -30,6 +30,7 @@ use crate::trace_style::{TraceStyle, TraceValue};
 use crate::transaction_container::{TransactionRef, TransactionStreamRef};
 use crate::translation::{TranslationResultExt, TranslatorList, ValueKindExt, VariableInfoExt};
 use crate::view::{DrawConfig, DrawingContext};
+use crate::viewport::Viewport;
 use crate::wave_container::{QueryResult, VariableRefExt};
 use crate::wave_data::WaveData;
 use crate::{
@@ -91,8 +92,10 @@ impl From<&VariableInfo> for DigitalDrawingType {
         }
     }
 }
-/// List of values to draw for a variable. It is an ordered list of values that should
-/// be drawn at the *start time* until the *start time* of the next value
+/// List of values to draw for a variable.
+///
+/// It is an ordered list of values that should be drawn at the *start time*
+/// until the *start time* of the next value.
 pub struct DigitalDrawingCommands {
     pub drawing_type: DigitalDrawingType,
     pub values: Vec<(f32, DrawnRegion)>,
@@ -215,7 +218,7 @@ fn variable_digital_draw_commands(
     let mut clock_edges = vec![];
     let mut local_msgs = vec![];
     let displayed_field_ref: DisplayedFieldRef = display_id.into();
-    let num_timestamps = waves.safe_num_timestamps();
+    let max_timestamp = waves.safe_max_timestamp();
 
     let mut local_commands: HashMap<Vec<String>, DigitalDrawingCommands> = HashMap::new();
 
@@ -246,7 +249,7 @@ fn variable_digital_draw_commands(
             })) => waves.viewports[viewport_idx].pixel_from_time(
                 &timestamp.to_bigint().unwrap(),
                 view_width,
-                &num_timestamps,
+                &max_timestamp,
             ),
             // If we don't have a next timestamp, we don't need to recheck until the last time
             // step
@@ -416,8 +419,8 @@ impl SystemState {
     ) -> Option<CachedDrawData> {
         let mut draw_commands = HashMap::new();
 
-        let num_timestamps = waves.safe_num_timestamps();
-        let max_time = num_timestamps.to_f64().unwrap_or(f64::MAX);
+        let max_timestamp = waves.safe_max_timestamp();
+        let max_time = max_timestamp.to_f64().unwrap_or(f64::MAX);
         let mut clock_edges_by_clock = vec![];
         let viewport = waves.viewports[viewport_idx];
         // Compute which timestamp to draw in each pixel. We'll draw from -extra_draw_width to
@@ -426,7 +429,7 @@ impl SystemState {
             .into_par_iter()
             .filter_map(|x| {
                 let time = viewport
-                    .as_absolute_time(f64::from(x), cfg.canvas_size.x, &num_timestamps)
+                    .as_absolute_time(f64::from(x), cfg.canvas_size.x, &max_timestamp)
                     .0;
                 if time < 0. || time > max_time {
                     None
@@ -522,7 +525,7 @@ impl SystemState {
         let mut new_focused_tx: Option<&Transaction> = None;
 
         let viewport = waves.viewports[viewport_idx];
-        let num_timestamps = waves.safe_num_timestamps();
+        let max_timestamp = waves.safe_max_timestamp();
 
         let displayed_streams = waves
             .items_tree
@@ -539,7 +542,7 @@ impl SystemState {
 
         let first_visible_timestamp = viewport
             .curr_left
-            .absolute(&num_timestamps)
+            .absolute(&max_timestamp)
             .0
             .to_biguint()
             .unwrap_or(BigUint::ZERO);
@@ -602,8 +605,7 @@ impl SystemState {
                     let curr_tx_id = tx.get_tx_id();
 
                     // stop drawing after last visible transaction
-                    if start_time.to_f64().unwrap()
-                        > viewport.curr_right.absolute(&num_timestamps).0
+                    if start_time.to_f64().unwrap() > viewport.curr_right.absolute(&max_timestamp).0
                     {
                         break;
                     }
@@ -617,12 +619,12 @@ impl SystemState {
                     let min_px = viewport.pixel_from_time(
                         &start_time.to_bigint().unwrap(),
                         cfg.canvas_size.x - 1.,
-                        &num_timestamps,
+                        &max_timestamp,
                     );
                     let max_px = viewport.pixel_from_time(
                         &end_time.to_bigint().unwrap(),
                         cfg.canvas_size.x - 1.,
-                        &num_timestamps,
+                        &max_timestamp,
                     );
 
                     // skip transactions that are rendered completely in the previous pixel
@@ -752,7 +754,7 @@ impl SystemState {
         let pointer_pos_global = ui.input(|i| i.pointer.interact_pos());
         let pointer_pos_mouse_gesture = pointer_pos_global
             .map(|p| self.transform_pos(to_screen, p, default_timeline_height, false));
-        let num_timestamps = waves.safe_num_timestamps();
+        let max_timestamp = waves.safe_max_timestamp();
 
         if response.clicked_by(PointerButton::Primary)
             || response.clicked_by(PointerButton::Secondary)
@@ -777,7 +779,7 @@ impl SystemState {
                 let mouse_ptr = Some(waves.viewports[viewport_idx].as_time_bigint(
                     mouse_ptr_pos.x,
                     frame_width,
-                    &num_timestamps,
+                    &max_timestamp,
                 ));
 
                 msgs.push(Message::CanvasZoom {
@@ -851,7 +853,7 @@ impl SystemState {
             let time = waves.viewports[viewport_idx].as_time_bigint(
                 start.unwrap().x,
                 frame_width,
-                &num_timestamps,
+                &max_timestamp,
             );
             msgs.push(Message::SetMouseGestureDragStart(
                 ui.input(|i| i.pointer.press_origin())
@@ -879,7 +881,7 @@ impl SystemState {
                     let x = waves.viewports[viewport_idx].pixel_from_time(
                         &snap_time,
                         frame_width,
-                        &num_timestamps,
+                        &max_timestamp,
                     );
                     Some(Pos2 { x, y: start_pos.y })
                 } else {
@@ -1709,7 +1711,13 @@ impl SystemState {
                 self.snap_to_edge(Some(top_left.to_pos2()), waves, frame_size.x, viewport_idx);
 
             if let Some(time) = snap_pos {
-                self.draw_line(&time, ctx, viewport_idx, waves);
+                draw_vertical_line_at_time(
+                    &time,
+                    ctx,
+                    &self.user.config.theme.cursor,
+                    &waves.safe_max_timestamp(),
+                    &waves.viewports[viewport_idx],
+                );
                 ui.menu_button("Set marker", |ui| {
                     for id in waves.markers.keys().sorted() {
                         ui.button(format!("{id}")).clicked().then(|| {
@@ -1747,8 +1755,8 @@ impl SystemState {
     ) -> Option<BigInt> {
         let pos = pointer_pos_canvas?;
         let viewport = &waves.viewports[viewport_idx];
-        let num_timestamps = waves.safe_num_timestamps();
-        let timestamp = viewport.as_time_bigint(pos.x, frame_width, &num_timestamps);
+        let max_timestamp = waves.safe_max_timestamp();
+        let timestamp = viewport.as_time_bigint(pos.x, frame_width, &max_timestamp);
         if let Some(utimestamp) = timestamp.to_biguint()
             && let Some(item_ref) = waves.item_ref_at_canvas_y(pos.y)
             && let Some(DisplayedItem::Variable(variable)) = &waves.displayed_items.get(&item_ref)
@@ -1767,8 +1775,8 @@ impl SystemState {
                 .unwrap_or_default()
                 .to_bigint()
                 .unwrap_or(BigInt::ZERO);
-            let prev = viewport.pixel_from_time(prev_time, frame_width, &num_timestamps);
-            let next = viewport.pixel_from_time(next_time, frame_width, &num_timestamps);
+            let prev = viewport.pixel_from_time(prev_time, frame_width, &max_timestamp);
+            let next = viewport.pixel_from_time(next_time, frame_width, &max_timestamp);
             if (prev - pos.x).abs() < (next - pos.x).abs() {
                 if (prev - pos.x).abs() <= self.user.config.snap_distance {
                     return Some(prev_time.clone());
@@ -1779,27 +1787,18 @@ impl SystemState {
         }
         Some(timestamp)
     }
-
-    /// Draw a vertical line at the given time position. Used for context menu.
-    pub fn draw_line(
-        &self,
-        time: &BigInt,
-        ctx: &mut DrawingContext,
-        viewport_idx: usize,
-        waves: &WaveData,
-    ) {
-        let x = waves.viewports[viewport_idx].pixel_from_time(
-            time,
-            ctx.cfg.canvas_size.x,
-            &waves.safe_num_timestamps(),
-        );
-
-        draw_vertical_line(x, ctx, &self.user.config.theme.cursor);
-    }
 }
 
-/// Draw a vertical line at the given x position with the specified stroke
-pub fn draw_vertical_line(x: f32, ctx: &mut DrawingContext, stroke: impl Into<Stroke>) {
+/// Draw a vertical line at the given time with the specified stroke.
+#[inline]
+pub(crate) fn draw_vertical_line_at_time(
+    time: &BigInt,
+    ctx: &mut DrawingContext,
+    stroke: impl Into<Stroke>,
+    max_timestamp: &BigInt,
+    viewport: &Viewport,
+) {
+    let x = viewport.pixel_from_time(time, ctx.cfg.canvas_size.x, max_timestamp);
     ctx.painter.line_segment(
         [
             (ctx.to_screen)(x, 0.),

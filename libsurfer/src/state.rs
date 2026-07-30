@@ -44,7 +44,9 @@ pub struct UserState {
     #[serde(skip)]
     pub config: SurferConfig,
 
-    /// Overrides for the config show_* fields. Defaults to `config.show_*` if not present
+    /// Overrides for the config show_* fields.
+    ///
+    /// Defaults to `config.show_*` if not present
     pub(crate) show_hierarchy: Option<bool>,
     pub(crate) show_menu: Option<bool>,
     pub(crate) show_ticks: Option<bool>,
@@ -375,7 +377,7 @@ impl SystemState {
                             top_item_draw_offset: 0.,
                             total_height: 0.,
                             display_item_ref_counter: 0,
-                            old_num_timestamps: None,
+                            old_max_timestamp: None,
                             graphics: HashMap::new(),
                             cache_generation: 0,
                             inflight_caches: HashMap::new(),
@@ -469,7 +471,7 @@ impl SystemState {
             top_item_draw_offset: 0.,
             total_height: 0.,
             display_item_ref_counter: 0,
-            old_num_timestamps: None,
+            old_max_timestamp: None,
             graphics: HashMap::new(),
             cache_generation: 0,
             inflight_caches: HashMap::new(),

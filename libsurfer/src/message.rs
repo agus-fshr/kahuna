@@ -81,9 +81,13 @@ pub enum Message {
     ExpandScope(ScopeExpandType),
     /// Add one or more variables to wave view.
     AddVariables(Vec<VariableRef>),
-    /// Add scope to wave view. If second argument is true, add subscopes recursively.
+    /// Add scope to wave view.
+    ///
+    /// If second argument is true, add subscopes recursively.
     AddScope(ScopeRef, bool),
-    /// Add scope to wave view as a group. If second argument is true, add subscopes recursively.
+    /// Add scope to wave view as a group.
+    ///
+    /// If second argument is true, add subscopes recursively.
     AddScopeAsGroup(ScopeRef, bool),
     /// Add a character to the repeat command counter.
     AddCount(char),
@@ -109,18 +113,28 @@ pub enum Message {
     /// Scroll in vertical direction so that the item at a given location in the list is at the top (or visible).
     ScrollToItem(usize),
     SetScrollOffset(f32),
-    /// Change format (translator) of a variable. Passing None as first element means all selected variables.
+    /// Change format (translator) of a variable.
+    ///
+    /// Passing None as first element means all selected variables.
     VariableFormatChange(MessageTarget<DisplayedFieldRef>, String),
     ItemSelectionClear,
-    /// Change color of waves/items. If first argument is None, change for selected items. If second argument is None, change to default value.
+    /// Change color of waves/items.
+    ///
+    /// If first argument is None, change for selected items. If second argument is None, change to default value.
     ItemColorChange(MessageTarget<VisibleItemIndex>, Option<String>),
-    /// Change background color of waves/items. If first argument is None, change for selected items. If second argument is None, change to default value.
+    /// Change background color of waves/items.
+    ///
+    /// If first argument is None, change for selected items. If second argument is None, change to default value.
     ItemBackgroundColorChange(MessageTarget<VisibleItemIndex>, Option<String>),
     ItemNameChange(Option<VisibleItemIndex>, Option<String>),
     ItemNameReset(MessageTarget<VisibleItemIndex>),
-    /// Change scaling factor/height of waves/items. If first argument is None, change for selected items.
+    /// Change scaling factor/height of waves/items.
+    ///
+    /// If first argument is None, change for selected items.
     ItemHeightScalingFactorChange(MessageTarget<VisibleItemIndex>, f32),
-    /// Change variable name type of waves/items. If first argument is None, change for selected items.
+    /// Change variable name type of waves/items.
+    ///
+    /// If first argument is None, change for selected items.
     ChangeVariableNameType(MessageTarget<VisibleItemIndex>, VariableNameType),
     ForceVariableNameTypes(VariableNameType),
     /// Set or unset right alignment of names
@@ -128,8 +142,9 @@ pub enum Message {
     SetClockHighlightType(ClockHighlightType),
     SetFillHighValues(bool),
     SetTraceStyle(TraceStyle),
-    // Reset the translator for this variable back to default. Sub-variables,
-    // i.e. those with the variable idx and a shared path are also reset
+    /// Reset the translator for this variable back to default.
+    ///
+    /// Sub-variables, i.e., those with the variable idx and a shared path are also reset.
     ResetVariableFormat(DisplayedFieldRef),
     CanvasScroll {
         delta: Vec2,
@@ -162,8 +177,9 @@ pub enum Message {
     #[cfg(feature = "python")]
     /// Load translator from Python file path.
     LoadPythonTranslator(Utf8PathBuf),
-    /// Load a web assembly translator from file. This is loaded in addition to the
-    /// translators loaded on startup.
+    /// Load a web assembly translator from file.
+    ///
+    /// This is loaded in addition to the translators loaded on startup.
     #[cfg(all(not(target_arch = "wasm32"), feature = "wasm_plugins"))]
     LoadWasmTranslator(Utf8PathBuf),
     /// Load command file from file path.
@@ -283,7 +299,9 @@ pub enum Message {
     StopProgressTracker,
     /// Set which time unit to use.
     SetTimeUnit(TimeUnit),
-    /// Set how to format the time strings. Passing None resets it to default.
+    /// Set how to format the time strings.
+    ///
+    /// Passing None resets it to default.
     SetTimeStringFormatting(Option<TimeStringFormatting>),
     SetHighlightFocused(bool),
     CommandPromptClear,
@@ -359,19 +377,21 @@ pub enum Message {
         name: Option<String>,
         move_focus: bool,
     },
-    // Resolve a marker name or `#id` at execution time, then set or create the marker.
+    /// Resolve a marker name or `#id` at execution time, then set or create the marker.
     // FIXME Resolving by `#id` does not work as expected; characters after a `#` are
     // stripped as comments before being parsed.
     ResolveMarkerSet {
         name: String,
         time: BigInt,
     },
-    /// Set a marker at a specific position. If it doesn't exist, it will be created
+    /// Set a marker at a specific position.
+    ///
+    /// If it doesn't exist, it will be created
     SetMarker {
         id: u8,
         time: BigInt,
     },
-    // Resolve a marker name or `#id` at execution time, then remove the marker if it exists.
+    /// Resolve a marker name or `#id` at execution time, then remove the marker if it exists.
     // FIXME Resolving by `#id` does not work as expected; characters after a `#` are
     // stripped as comments before being parsed.
     ResolveMarkerRemove(String),
@@ -402,14 +422,17 @@ pub enum Message {
     VariableDragTargetChanged(crate::displayed_item_tree::TargetPosition),
     VariableDragFinished,
     AddDraggedVariables(Vec<VariableRef>),
-    /// Unpauses the simulation if the wave source supports this kind of interactivity. Otherwise
-    /// does nothing
+    /// Unpauses the simulation if the wave source supports this kind of interactivity.
+    ///
+    /// Otherwise does nothing
     UnpauseSimulation,
-    /// Pause the simulation if the wave source supports this kind of interactivity. Otherwise
-    /// does nothing
+    /// Pause the simulation if the wave source supports this kind of interactivity.
+    ///
+    /// Otherwise does nothing
     PauseSimulation,
-    /// Expand the displayed item into subfields. Levels controls how many layers of subfields
-    /// are expanded. 0 unexpands it completely
+    /// Expand the displayed item into subfields.
+    ///
+    /// Levels controls how many layers of subfields are expanded. 0 unexpands it completely.
     ExpandDrawnItem {
         item: DisplayedItemRef,
         levels: usize,
@@ -470,11 +493,15 @@ pub enum Message {
     /// Configures the WCP system to listen for messages over internal channels.
     /// This is used to start WCP on wasm
     SetupChannelWCP,
-    /// Exit the application. This has no effect on wasm and closes the window
-    /// on other platforms
     DownloadDefaultConfig,
+    /// Exit the application.
+    ///
+    /// This has no effect on wasm and closes the window
+    /// on other platforms
     Exit,
-    /// Should only used for tests. Expands the parameter section so that one can test the rendering.
+    /// Expands the parameter section so that one can test the rendering.
+    ///
+    /// Should only used for tests.
     ExpandParameterSection,
     AsyncDone(AsyncJob),
     SetMouseGestureAnnotation(Option<AnnotationKind>),

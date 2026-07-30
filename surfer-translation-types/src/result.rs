@@ -45,8 +45,9 @@ pub enum ValueRepr {
     },
     /// Represent the value as [f1, f2, f3...]
     Array,
-    /// The variable value is not present. This is used to draw variables which are
-    /// validated by other variables.
+    /// The variable value is not present.
+    ///
+    /// This is used to draw variables which are validated by other variables.
     NotPresent,
     Event,
 }

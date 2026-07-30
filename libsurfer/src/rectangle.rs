@@ -72,9 +72,9 @@ impl RectAnnotation {
         ctx: &DrawingContext,
         y_offset: f32,
     ) -> Option<Pos2> {
-        let num_timestamps = waves.safe_num_timestamps();
+        let max_timestamp = waves.safe_max_timestamp();
 
-        let x = viewport.pixel_from_time(&self.from.time, ctx.cfg.canvas_size.x, &num_timestamps);
+        let x = viewport.pixel_from_time(&self.from.time, ctx.cfg.canvas_size.x, &max_timestamp);
 
         let from_y = self.from.wave.as_ref().and_then(|f| waves.get_item_y(f))?;
         let to_y = self.to.wave.as_ref().and_then(|to| waves.get_item_y(to))?;
@@ -121,7 +121,7 @@ impl RectAnnotation {
         y_offset: f32,
     ) {
         let viewport = waves.viewports[viewport_idx];
-        let num_timestamps = waves.safe_num_timestamps();
+        let max_timestamp = waves.safe_max_timestamp();
 
         //Update size and coloring from theme and whether it selected or not
         self.annotation_data.stroke = Stroke::new(
@@ -133,8 +133,8 @@ impl RectAnnotation {
         let max_y = from_y.max(to_y) + y_offset;
 
         let min_x =
-            viewport.pixel_from_time(&self.from.time, ctx.cfg.canvas_size.x, &num_timestamps);
-        let max_x = viewport.pixel_from_time(&self.to.time, ctx.cfg.canvas_size.x, &num_timestamps);
+            viewport.pixel_from_time(&self.from.time, ctx.cfg.canvas_size.x, &max_timestamp);
+        let max_x = viewport.pixel_from_time(&self.to.time, ctx.cfg.canvas_size.x, &max_timestamp);
 
         self.rect = Rect {
             min: (ctx.to_screen)(min_x, min_y),
@@ -305,8 +305,8 @@ impl Annotatable for RectAnnotation {
         waves: &WaveData,
         offset: f32,
     ) -> Pos2 {
-        let num_timestamps = waves.safe_num_timestamps();
-        let x = viewport.pixel_from_time(&self.to.time, ctx.cfg.canvas_size.x, &num_timestamps);
+        let max_timestamp = waves.safe_max_timestamp();
+        let x = viewport.pixel_from_time(&self.to.time, ctx.cfg.canvas_size.x, &max_timestamp);
         let y = calculate_y(self.to.wave.as_ref(), waves).unwrap() + offset;
         (ctx.to_screen)(x, y)
     }

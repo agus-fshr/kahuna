@@ -263,7 +263,7 @@ pub struct AnalogSignalCache {
     pub global_min: f64,
     pub global_max: f64,
     /// Total number of time units (for cache invalidation on reload).
-    pub num_timestamps: u64,
+    pub max_timestamp: u64,
 }
 
 impl AnalogSignalCache {
@@ -271,7 +271,7 @@ impl AnalogSignalCache {
         accessor: SignalAccessor,
         translator: &DynTranslator,
         meta: &VariableMeta,
-        num_timestamps: u64,
+        max_timestamp: u64,
         block_size: Option<usize>,
     ) -> Option<Self> {
         let block_size = block_size.unwrap_or(64);
@@ -297,7 +297,7 @@ impl AnalogSignalCache {
             rmq,
             global_min: global.min,
             global_max: global.max,
-            num_timestamps,
+            max_timestamp,
         })
     }
 

@@ -123,7 +123,7 @@ impl SystemState {
                 let x_pixel = waves.viewports[viewport_idx].pixel_from_time(
                     time,
                     ctx.cfg.canvas_size.x,
-                    &waves.safe_num_timestamps(),
+                    &waves.safe_max_timestamp(),
                 );
                 start_location.x = x_pixel;
             }
@@ -178,7 +178,7 @@ impl SystemState {
         ui: &Context,
         y_offset: f32,
     ) {
-        let num_timestamps = waves.safe_num_timestamps();
+        let max_timestamp = waves.safe_max_timestamp();
         let Some(end_location) = pointer_pos_canvas else {
             return;
         };
@@ -192,7 +192,7 @@ impl SystemState {
                         msgs,
                         viewport_idx,
                         waves,
-                        &num_timestamps,
+                        &max_timestamp,
                         frame_width,
                         ctx,
                         ui,
@@ -206,7 +206,7 @@ impl SystemState {
                         msgs,
                         viewport_idx,
                         waves,
-                        &num_timestamps,
+                        &max_timestamp,
                         frame_width,
                         ctx,
                         y_offset,
@@ -228,12 +228,12 @@ impl SystemState {
                                 start: waves.viewports[viewport_idx].as_time_bigint(
                                     min_x,
                                     frame_width,
-                                    &num_timestamps,
+                                    &max_timestamp,
                                 ),
                                 end: waves.viewports[viewport_idx].as_time_bigint(
                                     max_x,
                                     frame_width,
-                                    &num_timestamps,
+                                    &max_timestamp,
                                 ),
                                 viewport_idx,
                             });
@@ -422,7 +422,7 @@ impl SystemState {
         msgs: &mut Vec<Message>,
         viewport_idx: usize,
         waves: &WaveData,
-        num_timestamps: &BigInt,
+        max_timestamp: &BigInt,
         frame_width: f32,
         ctx: &mut DrawingContext<'_>,
         ui: &Context,
@@ -467,8 +467,8 @@ impl SystemState {
 
         let viewport = &waves.viewports[viewport_idx];
 
-        let t1 = viewport.as_time_bigint(start_location.x, frame_width, num_timestamps);
-        let t2 = viewport.as_time_bigint(end_location.x, frame_width, num_timestamps);
+        let t1 = viewport.as_time_bigint(start_location.x, frame_width, max_timestamp);
+        let t2 = viewport.as_time_bigint(end_location.x, frame_width, max_timestamp);
 
         let (time_start, time_end) = (t1.clone().min(t2.clone()), t1.max(t2));
 
@@ -532,7 +532,7 @@ impl SystemState {
         msgs: &mut Vec<Message>,
         viewport_idx: usize,
         waves: &WaveData,
-        num_timestamps: &BigInt,
+        max_timestamp: &BigInt,
         frame_width: f32,
         ctx: &mut DrawingContext<'_>,
         offset: f32,
@@ -543,7 +543,7 @@ impl SystemState {
         let time_from: BigInt = waves.viewports[viewport_idx].as_time_bigint(
             start_location.x,
             frame_width,
-            num_timestamps,
+            max_timestamp,
         );
 
         let snap_pos = Some(Pos2::new(end_location.x, end_location.y - offset));
@@ -554,7 +554,7 @@ impl SystemState {
                 waves.viewports[viewport_idx].as_time_bigint(
                     end_location.x,
                     frame_width,
-                    num_timestamps,
+                    max_timestamp,
                 )
             });
 
@@ -690,9 +690,9 @@ impl SystemState {
         } else {
             (current_location.x, start_location.x)
         };
-        let num_timestamps = waves.safe_num_timestamps();
-        let start_time = waves.viewports[viewport_idx].as_time_bigint(minx, width, &num_timestamps);
-        let end_time = waves.viewports[viewport_idx].as_time_bigint(maxx, width, &num_timestamps);
+        let max_timestamp = waves.safe_max_timestamp();
+        let start_time = waves.viewports[viewport_idx].as_time_bigint(minx, width, &max_timestamp);
+        let end_time = waves.viewports[viewport_idx].as_time_bigint(maxx, width, &max_timestamp);
         let diff_time = &end_time - &start_time;
         let time_formatter = TimeFormatter::new(
             &waves.inner.metadata().timescale,
@@ -775,7 +775,7 @@ impl SystemState {
                     let x = waves.viewports[viewport_idx].pixel_from_time(
                         &snap_time,
                         frame_width,
-                        &waves.safe_num_timestamps(),
+                        &waves.safe_max_timestamp(),
                     );
                     current_location.x = x;
                 }

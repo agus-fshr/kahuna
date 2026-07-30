@@ -108,13 +108,15 @@ pub struct SystemState {
     pub(crate) surver_selected_file: RefCell<Option<usize>>,
     pub(crate) surver_load_options: RefCell<LoadOptions>,
 
-    /// These items should be expanded into subfields in the next frame. Cleared after each
-    /// frame
+    /// These items should be expanded into subfields in the next frame.
+    ///
+    /// Cleared after each frame
     pub(crate) items_to_expand: RefCell<Vec<(DisplayedItemRef, usize)>>,
-    /// Character to add to the command prompt if it is visible. This is only needed for
-    /// presentations at them moment.
+    /// Character to add to the command prompt if it is visible.
+    ///
+    /// This is only needed for presentations at them moment.
     pub(crate) char_to_add_to_prompt: RefCell<Option<char>>,
-    // This item works with the expand scope feature to determine what hierarchys to open
+    /// This item works with the expand scope feature to determine what hierarchys to open.
     pub scope_ref_to_expand: RefCell<Option<ScopeExpandType>>,
 
     pub(crate) time_widgets: RefCell<std::collections::HashMap<String, TimeInputState>>,

@@ -94,8 +94,9 @@ use surfer_translation_types::{
     TranslationPreference, TranslationResult, ValueKind, VariableInfo, VariableMeta,
 };
 
-/// Returns the name of the plugin as shown to the user. This needs to be unique, so
-/// do not set it to a translator name that is already present in Surfer.
+/// Returns the name of the plugin as shown to the user.
+///
+/// This needs to be unique, so do not set it to a translator name that is already present in Surfer.
 ///
 /// While it is possible to change the name between calls, doing so will cause
 /// unexpected behaviour.
@@ -120,7 +121,9 @@ pub fn translates(_variable: VariableMeta<(), ()>) -> FnResult<TranslationPrefer
     Ok(TranslationPreference::Yes)
 }
 
-/// Returns information about the hierarchical structure of the signal. For translators
+/// Returns information about the hierarchical structure of the signal.
+///
+/// For translators
 /// which simply want to do bit vector to string and/or color translation, returning
 /// [VariableInfo::Bits] is sufficient.
 ///
@@ -178,14 +181,16 @@ pub mod optional {
 
     use super::*;
 
-    /// The new function is used to initialize a plugin. It is called once when the
-    /// plugin is loaded
+    /// The new function is used to initialize a plugin.
+    ///
+    /// It is called once when the plugin is loaded
     pub fn new() -> FnResult<()> {
         Ok(())
     }
 
-    /// Called every time Surfer reloads the waveform. This can be used to
-    /// re-run any initialization that depends on which waveform is loaded.
+    /// Called every time Surfer reloads the waveform.
+    ///
+    /// This can be used to re-run any initialization that depends on which waveform is loaded.
     ///
     /// Note that `set_wave_source` is also called when reloading, so if the state
     /// depends on the currently loaded waveform, `reload` is not necessary.

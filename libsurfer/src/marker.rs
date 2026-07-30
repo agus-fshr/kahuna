@@ -7,7 +7,7 @@ use itertools::Itertools;
 use num::{BigInt, Zero};
 
 use crate::SystemState;
-use crate::drawing_canvas::draw_vertical_line;
+use crate::drawing_canvas::draw_vertical_line_at_time;
 use crate::{
     config::SurferTheme,
     displayed_item::{DisplayedItem, DisplayedItemRef, DisplayedMarker},
@@ -59,23 +59,21 @@ impl WaveData {
     }
 
     pub fn draw_cursor(&self, theme: &SurferTheme, ctx: &mut DrawingContext, viewport: &Viewport) {
-        if let Some(marker) = &self.cursor {
-            let num_timestamps = self.safe_num_timestamps();
-            let x = viewport.pixel_from_time(marker, ctx.cfg.canvas_size.x, &num_timestamps);
-            draw_vertical_line(x, ctx, &theme.cursor);
+        if let Some(marker_time) = &self.cursor {
+            let max_timestamp = self.safe_max_timestamp();
+            draw_vertical_line_at_time(marker_time, ctx, &theme.cursor, &max_timestamp, viewport);
         }
     }
 
     pub fn draw_markers(&self, theme: &SurferTheme, ctx: &mut DrawingContext, viewport: &Viewport) {
-        let num_timestamps = self.safe_num_timestamps();
-        for (idx, marker) in &self.markers {
+        let max_timestamp = self.safe_max_timestamp();
+        for (idx, marker_time) in &self.markers {
             let color = self.get_marker_color(*idx, theme);
             let stroke = Stroke {
                 color,
                 width: theme.cursor.width,
             };
-            let x = viewport.pixel_from_time(marker, ctx.cfg.canvas_size.x, &num_timestamps);
-            draw_vertical_line(x, ctx, stroke);
+            draw_vertical_line_at_time(marker_time, ctx, stroke, &max_timestamp, viewport);
         }
     }
 
@@ -128,8 +126,9 @@ impl WaveData {
         }
     }
 
-    /// Set the marker with the specified id to the location. If the marker doesn't exist already,
-    /// it will be created
+    /// Set the marker with the specified id to the location.
+    ///
+    /// If the marker doesn't exist already, it will be created.
     pub fn set_marker_position(&mut self, idx: u8, location: &BigInt) {
         if !self.markers.contains_key(&idx) {
             self.insert_item(

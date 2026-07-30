@@ -97,7 +97,7 @@ pub struct WaveData {
     #[serde(skip)]
     pub total_height: f32,
     #[serde(skip)]
-    pub old_num_timestamps: Option<BigInt>,
+    pub old_max_timestamp: Option<BigInt>,
     /// Generation counter for analog cache invalidation on waveform reload.
     #[serde(skip)]
     pub cache_generation: u64,
@@ -210,7 +210,7 @@ impl WaveData {
             &mut self.items_tree,
         );
 
-        let old_num_timestamps = self.num_timestamps();
+        let old_max_timestamp = self.max_timestamp();
         let mut new_wavedata = WaveData {
             inner: DataContainer::Waves(*new_waves),
             source,
@@ -239,7 +239,7 @@ impl WaveData {
             top_item_draw_offset: 0.,
             graphics: HashMap::new(),
             total_height: 0.,
-            old_num_timestamps,
+            old_max_timestamp,
             cache_generation: self.cache_generation + 1, // Invalidate all existing caches
             inflight_caches: HashMap::new(),
         };
@@ -325,18 +325,18 @@ impl WaveData {
     /// Needs to be called after `update_with`, once the new number of timestamps is available in
     /// the inner `WaveContainer`.
     pub fn update_viewports(&mut self) {
-        if let Some(old_num_timestamps) = std::mem::take(&mut self.old_num_timestamps) {
+        if let Some(old_max_timestamp) = std::mem::take(&mut self.old_max_timestamp) {
             // FIXME: I'm not sure if Defaulting to 1 time step is the right thing to do if we
             // have none, but it does avoid some potentially nasty division by zero problems
-            let new_num_timestamps = self
+            let new_max_timestamp = self
                 .inner
                 .max_timestamp()
                 .unwrap_or_else(BigUint::one)
                 .to_bigint()
                 .unwrap();
-            if new_num_timestamps != old_num_timestamps {
+            if new_max_timestamp != old_max_timestamp {
                 for viewport in &mut self.viewports {
-                    *viewport = viewport.clip_to(&old_num_timestamps, &new_num_timestamps);
+                    *viewport = viewport.clip_to(&old_max_timestamp, &new_max_timestamp);
                 }
             }
         }
@@ -836,8 +836,8 @@ impl WaveData {
 
     pub fn go_to_cursor_if_not_in_view(&mut self) -> bool {
         if let Some(cursor) = &self.cursor {
-            let num_timestamps = self.safe_num_timestamps();
-            self.viewports[0].go_to_cursor_if_not_in_view(cursor, &num_timestamps)
+            let max_timestamp = self.safe_max_timestamp();
+            self.viewports[0].go_to_cursor_if_not_in_view(cursor, &max_timestamp)
         } else {
             false
         }
@@ -849,7 +849,7 @@ impl WaveData {
         viewport.pixel_from_time(
             self.numbered_marker_time(idx),
             view_width,
-            &self.safe_num_timestamps(),
+            &self.safe_max_timestamp(),
         )
     }
 
@@ -972,8 +972,9 @@ impl WaveData {
         self.scroll_offset = target_scroll.clamp(0.0, max_scroll);
     }
 
-    /// Set cursor at next (or previous, if `next` is false) transition of `variable`. If `skip_zero` is true,
-    /// use the next transition to a non-zero value.
+    /// Set cursor at next (or previous, if `next` is false) transition of `variable`.
+    ///
+    /// If `skip_zero` is true, use the next transition to a non-zero value.
     pub fn set_cursor_at_transition(
         &mut self,
         next: bool,
@@ -999,7 +1000,7 @@ impl WaveData {
                     }
                 } else {
                     // No next transition, go to end
-                    if let Some(end_time) = self.num_timestamps() {
+                    if let Some(end_time) = self.max_timestamp() {
                         self.cursor = Some(end_time);
                     } else {
                         warn!(
@@ -1056,22 +1057,25 @@ impl WaveData {
         self.display_item_ref_counter.into()
     }
 
-    /// Returns the number of timestamps in the current waves. For now, this adjusts the
-    /// number of timestamps as returned by wave sources if they specify 0 timestamps. This is
-    /// done to avoid having to consider what happens with the viewport.
+    /// Returns the maximum timestamp in the current waves.
+    ///
+    /// For now, this adjusts the maximum timestamp as returned by wave
+    /// sources if it has 0 time. This is done to avoid having
+    /// to consider what happens with the viewport.
     #[must_use]
-    pub fn num_timestamps(&self) -> Option<BigInt> {
+    pub fn max_timestamp(&self) -> Option<BigInt> {
         self.inner
             .max_timestamp()
             .filter(|r| !r.is_zero())
             .and_then(|r| r.to_bigint())
     }
 
-    /// Returns the number of timestamps in the current waves. This is like `num_timestamps` but
-    /// will always return at least 1.
+    /// Returns the maximum timestamp in the current waves.
+    ///
+    /// This is like `max_timestamp` but will always return at least 1.
     #[must_use]
-    pub fn safe_num_timestamps(&self) -> BigInt {
-        self.num_timestamps().unwrap_or_else(BigInt::one)
+    pub fn safe_max_timestamp(&self) -> BigInt {
+        self.max_timestamp().unwrap_or_else(BigInt::one)
     }
 
     #[must_use]
@@ -1092,7 +1096,9 @@ impl WaveData {
             })
     }
 
-    /// Spawn async worker to build analog cache. Worker holds Arc clone.
+    /// Spawn async worker to build analog cache.
+    ///
+    /// Worker holds Arc clone.
     pub fn build_analog_cache_async(
         &self,
         entry: std::sync::Arc<crate::analog_signal_cache::AnalogCacheEntry>,
@@ -1103,7 +1109,7 @@ impl WaveData {
         let wave_container = self.inner.as_waves()?;
         let meta = wave_container.variable_meta(variable_ref).ok()?.clone();
 
-        let num_timestamps = self.num_timestamps()?.to_u64()?;
+        let max_timestamp = self.max_timestamp()?.to_u64()?;
 
         let accessor = wave_container.signal_accessor(entry.cache_key.0).ok()?;
 
@@ -1113,7 +1119,7 @@ impl WaveData {
                 accessor,
                 &translator,
                 &meta,
-                num_timestamps,
+                max_timestamp,
                 None,
             );
 
@@ -1210,7 +1216,7 @@ mod tests {
             ],
             top_item_draw_offset,
             total_height: 40.0,
-            old_num_timestamps: None,
+            old_max_timestamp: None,
             cache_generation: 0,
             inflight_caches: HashMap::new(),
         }

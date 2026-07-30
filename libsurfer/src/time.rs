@@ -957,7 +957,7 @@ impl SystemState {
             &self.user.wanted_timeunit,
             &self.get_time_format(),
             self.user.config.theme.ticks.density,
-            &waves.safe_num_timestamps(),
+            &waves.safe_max_timestamp(),
         )
     }
 }
@@ -975,19 +975,19 @@ fn get_ticks_internal(
     wanted_timeunit: &TimeUnit,
     time_format: &TimeFormat,
     density: f32,
-    num_timestamps: &BigInt,
+    max_timestamp: &BigInt,
 ) -> Vec<(String, f32, i64)> {
     let char_width = text_size * (20. / 31.);
     let rightexp = viewport
         .curr_right
-        .absolute(num_timestamps)
+        .absolute(max_timestamp)
         .inner()
         .abs()
         .log10()
         .round() as i16;
     let leftexp = viewport
         .curr_left
-        .absolute(num_timestamps)
+        .absolute(max_timestamp)
         .inner()
         .abs()
         .log10()
@@ -996,7 +996,7 @@ fn get_ticks_internal(
     let max_labels = ((frame_width * density) / max_labelwidth).floor() + 2.;
     let scale = 10.0f64.powf(
         ((viewport.curr_right - viewport.curr_left)
-            .absolute(num_timestamps)
+            .absolute(max_timestamp)
             .inner()
             / f64::from(max_labels))
         .log10()
@@ -1007,9 +1007,9 @@ fn get_ticks_internal(
     for step in &TICK_STEPS {
         let scaled_step = scale * step;
         let rounded_min_label_time =
-            (viewport.curr_left.absolute(num_timestamps).inner() / scaled_step).floor()
+            (viewport.curr_left.absolute(max_timestamp).inner() / scaled_step).floor()
                 * scaled_step;
-        let high = ((viewport.curr_right.absolute(num_timestamps).inner() - rounded_min_label_time)
+        let high = ((viewport.curr_right.absolute(max_timestamp).inner() - rounded_min_label_time)
             / scaled_step)
             .ceil() as f32
             + 1.;
@@ -1025,7 +1025,7 @@ fn get_ticks_internal(
                         // Time string
                         time_formatter.format(&tick),
                         // X position
-                        viewport.pixel_from_time(&tick, frame_width, num_timestamps),
+                        viewport.pixel_from_time(&tick, frame_width, max_timestamp),
                         // Absolute time
                         tick.to_i64().unwrap_or_default(),
                     )
@@ -1842,7 +1842,7 @@ mod get_ticks_tests {
         let wanted = TimeUnit::MicroSeconds;
         let time_format = TimeFormat::default();
         let config = crate::config::SurferConfig::default();
-        let num_timestamps = BigInt::from(1_000_000i64);
+        let max_timestamp = BigInt::from(1_000_000i64);
 
         let ticks = get_ticks_internal(
             &vp,
@@ -1852,7 +1852,7 @@ mod get_ticks_tests {
             &wanted,
             &time_format,
             config.theme.ticks.density,
-            &num_timestamps,
+            &max_timestamp,
         );
 
         assert!(!ticks.is_empty(), "expected at least one tick");
@@ -1904,7 +1904,7 @@ mod get_ticks_tests {
         // make ticks dense
         config.theme.ticks.density = 1.0;
 
-        let num_timestamps = BigInt::from(1_000_000i64);
+        let max_timestamp = BigInt::from(1_000_000i64);
 
         let ticks = get_ticks_internal(
             &vp,
@@ -1914,7 +1914,7 @@ mod get_ticks_tests {
             &wanted,
             &time_format,
             config.theme.ticks.density,
-            &num_timestamps,
+            &max_timestamp,
         );
 
         assert!(!ticks.is_empty(), "expected ticks even for narrow view");

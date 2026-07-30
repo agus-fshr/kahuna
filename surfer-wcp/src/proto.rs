@@ -2,9 +2,10 @@ use num::{BigInt, FromPrimitive};
 use serde::{Deserialize, Deserializer, Serialize, de};
 use serde_json::Number;
 
-/// A reference to a currently displayed item. From the protocol perspective,
-/// This can be any integer or a string and what it is is decided by the server,
-/// in this case surfer.
+/// A reference to a currently displayed item.
+///
+/// From the protocol perspective, this can be any integer or a string
+/// and what it is is decided by the server, in this case surfer.
 /// Since the representation is up to the server, clients cannot generate these on its
 /// own, it can only use the ones it has received from the server.
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy)]
@@ -135,24 +136,28 @@ pub enum WcpCommand {
         recursive: bool,
     },
     /// Adds the specified markers to the view.
+    ///
     /// Responds with [`WcpResponse::add_markers`] which contains a list of the item references
     /// that can be used to reference the added items later
     /// Responds with an error if no waveforms are loaded
     add_markers { markers: Vec<MarkerInfo> },
     /// Reloads the waveform from disk if this is possible for the current waveform format.
+    ///
     /// If it is not possible, this has no effect.
     /// Responds instantly with [`WcpResponse::ack`]
     /// Once the waveforms have been loaded, a separate event is triggered
     reload,
-    /// Moves the viewport to center it on the specified timestamp. Does not affect the zoom
-    /// level.
+    /// Moves the viewport to center it on the specified timestamp.
+    ///
+    /// Does not affect the zoom level.
     /// Responds with [`WcpResponse::ack`]
     set_viewport_to {
         #[serde(deserialize_with = "deserialize_timestamp")]
         timestamp: BigInt,
     },
-    /// Moves the viewport to center it on the specified timestamps range. Does affect the zoom
-    /// level.
+    /// Moves the viewport to center it on the specified timestamps range.
+    ///
+    /// Does affect the zoom level.
     /// Responds with [`WcpResponse::ack`]
     set_viewport_range {
         #[serde(deserialize_with = "deserialize_timestamp")]

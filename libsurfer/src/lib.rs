@@ -777,11 +777,11 @@ impl SystemState {
                 viewport_idx,
             } => {
                 let waves = self.user.waves.as_mut()?;
-                if let Some(num_timestamps) = waves.num_timestamps() {
+                if let Some(max_timestamp) = waves.max_timestamp() {
                     waves.viewports[viewport_idx].handle_canvas_zoom(
                         mouse_ptr,
                         f64::from(delta),
-                        &num_timestamps,
+                        &max_timestamp,
                     );
                     self.invalidate_draw_commands();
                 } else {
@@ -795,12 +795,12 @@ impl SystemState {
                 viewport_idx,
             } => {
                 let waves = self.user.waves.as_mut()?;
-                if let Some(num_timestamps) = waves.num_timestamps() {
+                if let Some(max_timestamp) = waves.max_timestamp() {
                     let cursor = waves.cursor.as_ref()?;
                     waves.viewports[viewport_idx].zoom_to_time(
                         cursor,
                         f64::from(delta),
-                        &num_timestamps,
+                        &max_timestamp,
                     );
                     self.invalidate_draw_commands();
                 } else {
@@ -827,9 +827,9 @@ impl SystemState {
             Message::GoToTime(time, viewport_idx) => {
                 let waves = self.user.waves.as_mut()?;
                 // If there are no timestamps, the file is not fully loaded
-                if let Some(num_timestamps) = waves.num_timestamps() {
+                if let Some(max_timestamp) = waves.max_timestamp() {
                     let time = time?;
-                    waves.viewports[viewport_idx].go_to_time(&time.clone(), &num_timestamps);
+                    waves.viewports[viewport_idx].go_to_time(&time.clone(), &max_timestamp);
                     self.invalidate_draw_commands();
                 } else {
                     warn!(
@@ -852,8 +852,8 @@ impl SystemState {
             } => {
                 let waves = self.user.waves.as_mut()?;
                 // If there are no timestamps, the file is not fully loaded
-                if let Some(num_timestamps) = waves.num_timestamps() {
-                    waves.viewports[viewport_idx].zoom_to_range(&start, &end, &num_timestamps);
+                if let Some(max_timestamp) = waves.max_timestamp() {
+                    waves.viewports[viewport_idx].zoom_to_range(&start, &end, &max_timestamp);
                     self.invalidate_draw_commands();
                 } else {
                     warn!(
@@ -1138,7 +1138,7 @@ impl SystemState {
             } => {
                 let waves = self.user.waves.as_mut()?;
                 // If there are no timestamps, the file is not fully loaded
-                if let Some(num_timestamps) = waves.num_timestamps() {
+                if let Some(max_timestamp) = waves.max_timestamp() {
                     // if no cursor is set, move it to
                     // start of visible area transition for next transition
                     // end of visible area for previous transition
@@ -1147,9 +1147,9 @@ impl SystemState {
                         && let Some(vp) = waves.viewports.first()
                     {
                         waves.cursor = if next {
-                            Some(vp.left_edge_time(&num_timestamps))
+                            Some(vp.left_edge_time(&max_timestamp))
                         } else {
-                            Some(vp.right_edge_time(&num_timestamps))
+                            Some(vp.right_edge_time(&max_timestamp))
                         };
                     }
                     waves.set_cursor_at_transition(next, variable, skip_zero);
@@ -1698,9 +1698,9 @@ impl SystemState {
             Message::GoToMarkerPosition(idx, viewport_idx) => {
                 let waves = self.user.waves.as_mut()?;
                 // If there are no timestamps, the file is not fully loaded
-                if let Some(num_timestamps) = waves.num_timestamps() {
+                if let Some(max_timestamp) = waves.max_timestamp() {
                     let cursor = waves.markers.get(&idx)?;
-                    waves.viewports[viewport_idx].go_to_time(cursor, &num_timestamps);
+                    waves.viewports[viewport_idx].go_to_time(cursor, &max_timestamp);
                     self.invalidate_draw_commands();
                 } else {
                     warn!(
@@ -2538,14 +2538,14 @@ impl SystemState {
                 if let Some(waves) = self.user.waves.as_mut() {
                     waves.select_annotation(id);
 
-                    let num_timestamps: BigInt = waves.safe_num_timestamps();
+                    let max_timestamp: BigInt = waves.safe_max_timestamp();
 
                     let menu_pos_local = to_screen?.inverse().transform_pos(menu_pos?);
 
                     let menu_pos_time: BigInt = waves.viewports[viewport_idx?].as_time_bigint(
                         menu_pos_local.x,
                         frame_width?,
-                        &num_timestamps,
+                        &max_timestamp,
                     );
 
                     waves.annotation_menu_time = Some(menu_pos_time);

@@ -297,8 +297,10 @@ impl FieldRefExt for FieldRef {
 
 pub enum WaveContainer {
     Wellen(Box<WellenContainer>),
-    /// A wave container that contains nothing. Currently, the only practical use for this is
-    /// a placehodler when serializing and deserializing wave state.
+    /// A wave container that contains nothing.
+    ///
+    /// Currently, the only practical use for this is a placeholder when
+    /// serializing and deserializing wave state.
     Empty,
     Cxxrtl(Box<Mutex<CxxrtlContainer>>),
 }
@@ -322,9 +324,10 @@ impl WaveContainer {
         )))
     }
 
-    /// Creates a new empty wave container. Should only be used as a default for serde. If
-    /// no wave container is present, the `WaveData` should be None, rather than this being
-    /// Empty
+    /// Creates a new empty wave container.
+    ///
+    /// Should only be used as a default for serde. If no wave container is present,
+    /// the `WaveData` should be None, rather than this being Empty
     #[must_use]
     pub fn __new_empty() -> Self {
         WaveContainer::Empty
@@ -413,7 +416,9 @@ impl WaveContainer {
         }
     }
 
-    /// Loads multiple variables at once. This is useful when we want to add multiple variables in one go.
+    /// Loads multiple variables at once.
+    ///
+    /// This is useful when we want to add multiple variables in one go.
     pub fn load_variables<S: AsRef<VariableRef>, T: Iterator<Item = S>>(
         &mut self,
         variables: T,
@@ -443,8 +448,10 @@ impl WaveContainer {
         }
     }
 
-    /// Callback for when wellen signals have been loaded. Might lead to a new load variable
-    /// command since new variables might have been requested in the meantime.
+    /// Callback for when wellen signals have been loaded.
+    ///
+    /// Might lead to a new load variable command since new variables might
+    /// have been requested in the meantime.
     pub fn on_signals_loaded(&mut self, res: LoadSignalsResult) -> Result<Option<LoadSignalsCmd>> {
         match self {
             WaveContainer::Wellen(f) => f.on_signals_loaded(res),
@@ -663,9 +670,10 @@ impl WaveContainer {
         }
     }
 
-    /// Returns the simulation status for this wave source if it exists. Wave sources which have no
-    /// simulation status should return None here, otherwise buttons for controlling simulation
-    /// will be shown
+    /// Returns the simulation status for this wave source if it exists.
+    ///
+    /// Wave sources which have no simulation status should return None here,
+    /// otherwise buttons for controlling simulation will be shown
     #[must_use]
     pub fn simulation_status(&self) -> Option<SimulationStatus> {
         match self {

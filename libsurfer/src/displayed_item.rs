@@ -125,7 +125,9 @@ impl AnalogSettings {
     }
 }
 
-/// Per-variable analog state (settings + cache). Presence means enabled, None means disabled.
+/// Per-variable analog state (settings + cache).
+///
+/// Presence means enabled, None means disabled.
 /// NOTE: Clone is NOT derived - see manual impl below for undo/redo compatibility.
 #[derive(Serialize, Deserialize)]
 pub struct AnalogVarState {

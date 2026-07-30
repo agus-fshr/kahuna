@@ -102,7 +102,7 @@ impl WaveData {
         theme: &SurferTheme,
     ) {
         let color = theme.variable_dontcare;
-        let num_timestamps = self.safe_num_timestamps();
+        let max_timestamp = self.safe_max_timestamp();
         for g in self.graphics.values() {
             match g {
                 Graphic::TextArrow {
@@ -113,14 +113,14 @@ impl WaveData {
                     let from_x = viewport.pixel_from_time(
                         &from_point.x,
                         ctx.cfg.canvas_size.x,
-                        &num_timestamps,
+                        &max_timestamp,
                     );
                     let from_y = self.get_item_y(&from_point.y);
 
                     let to_x = viewport.pixel_from_time(
                         &to_point.x,
                         ctx.cfg.canvas_size.x,
-                        &num_timestamps,
+                        &max_timestamp,
                     );
                     let to_y = self.get_item_y(&to_point.y);
 
@@ -159,7 +159,7 @@ impl WaveData {
                     text,
                 } => {
                     let to_x =
-                        viewport.pixel_from_time(&pos.x, ctx.cfg.canvas_size.x, &num_timestamps);
+                        viewport.pixel_from_time(&pos.x, ctx.cfg.canvas_size.x, &max_timestamp);
                     let to_y = self.get_item_y(&pos.y);
                     if let Some(to_y) = to_y {
                         ctx.painter.text(
@@ -183,13 +183,13 @@ impl WaveData {
                     let from_x = viewport.pixel_from_time(
                         &from_point.x,
                         ctx.cfg.canvas_size.x,
-                        &num_timestamps,
+                        &max_timestamp,
                     );
                     let from_y = self.get_item_y(&from_point.y);
                     let to_x = viewport.pixel_from_time(
                         &from_point.x,
                         ctx.cfg.canvas_size.x,
-                        &num_timestamps,
+                        &max_timestamp,
                     );
                     let to_y = self.get_item_y(&to_point.y);
 

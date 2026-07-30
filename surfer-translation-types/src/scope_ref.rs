@@ -5,7 +5,9 @@ use std::hash::{Hash, Hasher};
 #[derive(Clone, Debug, Eq, Serialize, Deserialize, Default)]
 pub struct ScopeRef<ScopeId> {
     pub strs: Vec<String>,
-    /// Backend specific numeric ID. Performance optimization.
+    /// Backend specific numeric ID.
+    ///
+    /// Performance optimization.
     pub id: ScopeId,
 }
 

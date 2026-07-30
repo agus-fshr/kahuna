@@ -9,13 +9,15 @@ use std::hash::{Hash, Hasher};
 #[cfg_attr(feature = "wasm_plugins", encoding(Json))]
 #[derive(Clone, Debug, Eq, Serialize, Deserialize)]
 pub struct VariableRef<VarId, ScopeId> {
-    /// Path in the scope hierarchy to where this variable resides
+    /// Path in the scope hierarchy to where this variable resides.
     pub path: ScopeRef<ScopeId>,
-    /// Name of the variable in its hierarchy
+    /// Name of the variable in its hierarchy.
     pub name: String,
-    /// Backend specific numeric ID. Performance optimization.
+    /// Backend specific numeric ID.
+    ///
+    /// Performance optimization.
     pub id: VarId,
-    /// Index
+    /// Index.
     ///
     /// Only used to point out a variable in an array of variables,
     /// not variables that are arrays themselves, so only a single index required.

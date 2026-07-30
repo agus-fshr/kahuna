@@ -91,7 +91,7 @@ impl SystemState {
     fn draw_statusbar_right(&self, ui: &mut Ui, waves: Option<&WaveData>, msgs: &mut Vec<Message>) {
         if let Some(waves) = waves {
             ui.with_layout(Layout::right_to_left(Align::RIGHT), |ui| {
-                if let Some(time) = &waves.num_timestamps() {
+                if let Some(time) = &waves.max_timestamp() {
                     ui.label(format!(
                         " ({})",
                         time_string(

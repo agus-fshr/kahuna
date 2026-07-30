@@ -54,8 +54,10 @@ pub enum TrueName {
 #[cfg_attr(feature = "wasm_plugins", encoding(Json))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct VariableNameInfo {
-    /// A more human-undesrstandable name for a signal. This should only be used by translators
-    /// which
+    /// A more human-undesrstandable name for a signal.
+    ///
+    /// This should only be used by translators which understand the context of the variable and
+    /// can produce a better name than the raw name.
     pub true_name: Option<TrueName>,
     /// Translators can change the order that signals appear in the variable list using this
     /// parameter. Before rendering, the variable will be sported by this number in descending

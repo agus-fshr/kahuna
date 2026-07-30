@@ -209,7 +209,7 @@ impl Annotatable for ArrowAnnotation {
             arrow_annotation.is_selected();
         }
 
-        let num_timestamps: BigInt = waves.safe_num_timestamps();
+        let max_timestamp: BigInt = waves.safe_max_timestamp();
         let viewport = waves.viewports[viewport_idx];
         let frame_width = ctx.cfg.canvas_size.x;
 
@@ -241,10 +241,10 @@ impl Annotatable for ArrowAnnotation {
 
         // Convert annotation times into viewport-local x pixel positions.
         let new_to_x =
-            viewport.pixel_from_time(&arrow_annotation.to.time, frame_width, &num_timestamps);
+            viewport.pixel_from_time(&arrow_annotation.to.time, frame_width, &max_timestamp);
 
         let new_from_x =
-            viewport.pixel_from_time(&arrow_annotation.from.time, frame_width, &num_timestamps);
+            viewport.pixel_from_time(&arrow_annotation.from.time, frame_width, &max_timestamp);
 
         let mut new_to: Pos2 = (ctx.to_screen)(new_to_x, to_y);
         let mut new_from = (ctx.to_screen)(new_from_x, from_y);
@@ -319,7 +319,7 @@ impl Annotatable for ArrowAnnotation {
         waves: &WaveData,
         _offset: f32,
     ) -> Pos2 {
-        let num_timestamps = waves.safe_num_timestamps();
+        let max_timestamp = waves.safe_max_timestamp();
         let mut x;
         let mut y = match self.to.attached_item.as_ref() {
             Some(item_ref) => item_center_y(waves, item_ref).unwrap_or(0.),
@@ -327,14 +327,14 @@ impl Annotatable for ArrowAnnotation {
         };
         match self.head_mode {
             ArrowHeadMode::End => {
-                x = viewport.pixel_from_time(&self.to.time, ctx.cfg.canvas_size.x, &num_timestamps);
+                x = viewport.pixel_from_time(&self.to.time, ctx.cfg.canvas_size.x, &max_timestamp);
             }
             ArrowHeadMode::Double => {
                 // For double-headed arrows, place comments near the visual midpoint.
                 x = viewport.pixel_from_time(
                     &self.from.time,
                     ctx.cfg.canvas_size.x,
-                    &num_timestamps,
+                    &max_timestamp,
                 );
                 let from_y = match self.from.attached_item.as_ref() {
                     Some(item_ref) => item_center_y(waves, item_ref).unwrap_or(0.),
@@ -342,7 +342,7 @@ impl Annotatable for ArrowAnnotation {
                 };
                 y = f32::midpoint(y, from_y);
                 let to_x =
-                    viewport.pixel_from_time(&self.to.time, ctx.cfg.canvas_size.x, &num_timestamps);
+                    viewport.pixel_from_time(&self.to.time, ctx.cfg.canvas_size.x, &max_timestamp);
                 x = f32::midpoint(x, to_x);
             }
         }
@@ -508,9 +508,9 @@ impl ArrowAnnotation {
         ctx: &DrawingContext,
         offset_y: f32,
     ) -> Option<Pos2> {
-        let num_timestamps = waves.safe_num_timestamps();
+        let max_timestamp = waves.safe_max_timestamp();
 
-        let to_x = viewport.pixel_from_time(&self.to.time, ctx.cfg.canvas_size.x, &num_timestamps);
+        let to_x = viewport.pixel_from_time(&self.to.time, ctx.cfg.canvas_size.x, &max_timestamp);
         let to_y = self.to.screen_pos.y;
         let mut position = (ctx.to_screen)(to_x, to_y);
         position.y = to_y + offset_y;

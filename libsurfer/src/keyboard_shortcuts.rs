@@ -7,6 +7,8 @@ use crate::SystemState;
 use crate::message::{Message, MessageTarget};
 use crate::wave_data::{PER_SCROLL_EVENT, SCROLL_EVENTS_PER_PAGE};
 
+const NUMBER_OF_SHORTCUTS: usize = 32; // Update to reflect the actual number of shortcut actions defined in ShortcutAction enum
+
 // Table-driven dispatch action enum
 #[derive(Clone, Copy, Debug)]
 pub enum ShortcutAction {
@@ -134,6 +136,8 @@ where
 impl SurferShortcuts {
     #[must_use]
     pub fn format_shortcut(&self, action: ShortcutAction) -> String {
+        // Determine if the target OS is macOS for formatting purposes.
+        // Skip macOS formatting for tests.
         #[cfg(any(not(target_os = "macos"), test))]
         let is_mac = false;
         #[cfg(all(target_os = "macos", not(test)))]
@@ -147,7 +151,7 @@ impl SurferShortcuts {
 
     fn build_dispatch_table(&self) -> Vec<DispatchEntry> {
         // Pre-allocate with known capacity and build entries
-        let mut dispatch_table = Vec::with_capacity(10);
+        let mut dispatch_table = Vec::with_capacity(NUMBER_OF_SHORTCUTS);
 
         // Create entry for each action with its priority
         dispatch_table.extend_from_slice(&[
@@ -281,11 +285,17 @@ impl SurferShortcuts {
             },
         ]);
 
+        debug_assert!(
+            dispatch_table.len() == NUMBER_OF_SHORTCUTS,
+            "Dispatch table length does not match the number of defined shortcut actions. Update the NUMBER_OF_SHORTCUTS constant accordingly."
+        );
+
         // Sort by modifier priority (lower number = higher priority)
         dispatch_table.sort_by_key(|entry| entry.priority);
         dispatch_table
     }
 
+    /// Get the keyboard shortcuts for a given action.
     fn shortcuts_for_action(&self, action: ShortcutAction) -> &[KeyboardShortcut] {
         match action {
             ShortcutAction::OpenFile => &self.open_file,
@@ -323,6 +333,7 @@ impl SurferShortcuts {
         }
     }
 
+    /// Execute the action corresponding to the given shortcut.
     fn execute_action(&self, action: ShortcutAction, msgs: &mut Vec<Message>, state: &SystemState) {
         match action {
             ShortcutAction::OpenFile => {
@@ -527,6 +538,7 @@ impl SurferShortcuts {
         }
     }
 
+    /// Process the keyboard shortcuts and execute the corresponding actions.
     pub fn process(&self, ctx: &egui::Context, msgs: &mut Vec<Message>, state: &SystemState) {
         // Execute actions matching pressed shortcuts using cached dispatch table
         for entry in &self.cached_dispatch_table {
@@ -541,6 +553,15 @@ impl SurferShortcuts {
     }
 }
 
+/// Determine the priority of the keyboard shortcuts based on their modifiers.
+///
+/// This is because egui's shortcut handling ignores modifiers to some extent,
+/// so they must be checked in order of priority.
+///
+/// The egui design choice makes sense, since depending on keyboard you may not
+/// be able to press certain keys without modifiers, so one would like those
+/// symbols to match independent of modifiers. However, that leads to that the
+/// more modifiers, the earlier the short cut must be checked.
 fn modifier_priority(shortcuts: &[KeyboardShortcut]) -> u8 {
     shortcuts
         .iter()
