@@ -29,9 +29,9 @@ impl SystemState {
             .show(ctx, |ui| {
                 ScrollArea::both().id_salt("file_list").show(ui, |ui| {
                     ui.vertical(|ui| {
-                        ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                         if let Some(file_infos) = self.user.surver_file_infos.as_ref() {
                             let selected_idx = *self.surver_selected_file.borrow();
+                            ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                             for (i, file_info) in file_infos.iter().enumerate() {
                                 // Only make item selectable if last_load_ok is true
                                 ui.add_enabled_ui(file_info.last_load_ok, |ui| {

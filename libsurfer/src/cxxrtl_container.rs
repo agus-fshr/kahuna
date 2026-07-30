@@ -609,7 +609,7 @@ impl CxxrtlContainer {
                 // interval_query_cache for the query result
                 self.data
                     .interval_query_cache
-                    .query(variable, time.to_bigint().unwrap())
+                    .query(variable, &time.to_bigint().unwrap())
             })
             .unwrap_or_default();
         Some(res)

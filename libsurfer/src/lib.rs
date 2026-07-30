@@ -2505,7 +2505,7 @@ impl SystemState {
 
                 match target {
                     Some(id) => {
-                        waves.add_annotation_to_group(&name?, id);
+                        waves.add_annotation_to_group(name.as_ref()?, id);
                     }
                     None => {
                         warn!("Error: Just removed non existent id!");
@@ -2517,7 +2517,7 @@ impl SystemState {
                 self.save_current_canvas(format!("Changed {anno_id:?} name to {name}"));
                 let waves = self.user.waves.as_mut()?;
                 if let Some(target) = waves.annotations.iter_mut().find(|a| a.get_id() == anno_id) {
-                    target.set_name(name);
+                    target.set_name(&name);
                 }
             }
 
@@ -2538,11 +2538,11 @@ impl SystemState {
                 if let Some(waves) = self.user.waves.as_mut() {
                     waves.select_annotation(id);
 
-                    let max_timestamp: BigInt = waves.safe_max_timestamp();
+                    let max_timestamp = waves.safe_max_timestamp();
 
                     let menu_pos_local = to_screen?.inverse().transform_pos(menu_pos?);
 
-                    let menu_pos_time: BigInt = waves.viewports[viewport_idx?].as_time_bigint(
+                    let menu_pos_time = waves.viewports[viewport_idx?].as_time_bigint(
                         menu_pos_local.x,
                         frame_width?,
                         &max_timestamp,

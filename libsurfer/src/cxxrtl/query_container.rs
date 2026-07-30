@@ -50,10 +50,10 @@ impl QueryContainer {
     }
 
     #[must_use]
-    pub fn query(&self, var: &VariableRef, query_time: BigInt) -> QueryResult {
+    pub fn query(&self, var: &VariableRef, query_time: &BigInt) -> QueryResult {
         let values = block_on(self.variable_values.read());
 
-        if let Some((time, value_map)) = values.range(..query_time.clone()).next_back() {
+        if let Some((time, value_map)) = values.range(..query_time).next_back() {
             match (time.to_biguint(), value_map.get(var)) {
                 (Some(time), Some(value)) => {
                     let next = values

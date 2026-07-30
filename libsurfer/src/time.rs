@@ -29,6 +29,18 @@ pub struct TimeScale {
     pub multiplier: Option<u32>,
 }
 
+impl TimeScale {
+    pub(crate) fn multiplier_digits(&self) -> u8 {
+        match self.multiplier {
+            Some(1) => 0,
+            Some(10) => 1,
+            Some(100) => 2,
+            Some(multiplier) => multiplier.ilog10() as u8,
+            None => 0,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Display, Eq, PartialEq, Serialize, Deserialize, Sequence)]
 pub enum TimeUnit {
     #[display("zs")]
@@ -270,9 +282,9 @@ pub enum TimeStringFormatting {
 
 /// Get rid of trailing zeros if the string contains a ., i.e., being fractional
 /// If the resulting string ends with ., remove that as well.
-fn strip_trailing_zeros_and_period(time: String) -> String {
+fn strip_trailing_zeros_and_period(time: &str) -> String {
     if !time.contains('.') {
-        return time;
+        return time.to_string();
     }
     time.trim_end_matches('0').trim_end_matches('.').to_string()
 }
@@ -333,11 +345,11 @@ fn find_auto_scale(time: &BigInt, timescale: &TimeScale) -> TimeUnit {
     if matches!(timescale.unit, TimeUnit::Seconds) {
         return TimeUnit::Seconds;
     }
-    let multiplier_digits = timescale.multiplier.unwrap_or(1).ilog10();
-    let start_digits = -timescale.unit.exponent();
+    let multiplier_digits = timescale.multiplier_digits();
+    let start_digits = -timescale.unit.exponent() as u8;
     for e in (3..=start_digits).step_by(3).rev() {
-        if (time % pow10(e as u32 - multiplier_digits)).is_zero()
-            && let Some(unit) = TimeUnit::from_exponent(e - start_digits)
+        if (time % pow10(e - multiplier_digits)).is_zero()
+            && let Some(unit) = TimeUnit::from_exponent(e as i8 - start_digits as i8)
         {
             return unit;
         }
@@ -426,17 +438,17 @@ impl TimeFormatter {
 
         let timestring = if exponent_diff >= 0 {
             let precision = exponent_diff as usize;
-            strip_trailing_zeros_and_period(format!(
-                "{scaledtime:.precision$}",
-                scaledtime = BigRational::new(
-                    time * self.timescale.multiplier.unwrap_or(1),
-                    pow10(exponent_diff as u32)
-                )
-                .to_f64()
-                .unwrap_or(f64::NAN)
-            ))
+            let scaledtime = BigRational::new(
+                time * self.timescale.multiplier.unwrap_or(1),
+                pow10(exponent_diff as u8),
+            )
+            .to_f64()
+            .unwrap_or(f64::NAN);
+
+            let time = format!("{scaledtime:.precision$}",);
+            strip_trailing_zeros_and_period(&time)
         } else {
-            (time * self.timescale.multiplier.unwrap_or(1) * pow10(-exponent_diff as u32))
+            (time * self.timescale.multiplier.unwrap_or(1) * pow10((-exponent_diff) as u8))
                 .to_string()
         };
 
@@ -455,19 +467,31 @@ impl TimeFormatter {
 
 /// Helper to compute powers of 10 efficiently.
 /// Returns precomputed values for exponents 0-21, or computes on-demand for others.
-fn pow10(exp: u32) -> BigInt {
+fn pow10(exp: u8) -> BigInt {
     match exp {
         0 => BigInt::from(1),
         1 => BigInt::from(10),
         2 => BigInt::from(100),
         3 => BigInt::from(1000),
+        4 => BigInt::from(10_000),
+        5 => BigInt::from(100_000),
         6 => BigInt::from(1_000_000),
+        7 => BigInt::from(10_000_000),
+        8 => BigInt::from(100_000_000),
         9 => BigInt::from(1_000_000_000),
+        10 => BigInt::from(10_000_000_000i64),
+        11 => BigInt::from(100_000_000_000i64),
         12 => BigInt::from(1_000_000_000_000i64),
+        13 => BigInt::from(10_000_000_000_000i64),
+        14 => BigInt::from(100_000_000_000_000i64),
         15 => BigInt::from(1_000_000_000_000_000i64),
+        16 => BigInt::from(10_000_000_000_000_000i64),
+        17 => BigInt::from(100_000_000_000_000_000i64),
         18 => BigInt::from(1_000_000_000_000_000_000i64),
+        19 => BigInt::from(10_000_000_000_000_000_000i128),
+        20 => BigInt::from(100_000_000_000_000_000_000i128),
         21 => BigInt::from(1_000_000_000_000_000_000_000i128),
-        _ => BigInt::from(10).pow(exp),
+        _ => BigInt::from(10).pow(exp as u32),
     }
 }
 
@@ -597,7 +621,7 @@ fn normalize_numeric_with_unit(
 
     let extra_zeros = (steps as usize * 3).saturating_sub(fractional_len);
     if extra_zeros > 0 {
-        let scale = pow10(extra_zeros as u32);
+        let scale = pow10(extra_zeros as u8);
         value *= scale;
     }
 
@@ -686,22 +710,7 @@ impl TimeInputState {
         let data_exp = timescale.unit.exponent();
         let diff = unit_exp - data_exp;
 
-        let mut result = value;
-        if diff > 0 {
-            let scale = pow10(diff as u32);
-            result *= scale;
-        } else if diff < 0 {
-            let scale = pow10((-diff) as u32);
-            result /= scale;
-        }
-
-        let multiplier = timescale.multiplier.unwrap_or(1);
-        if multiplier != 1 {
-            let mult = BigInt::from(multiplier);
-            result /= mult;
-        }
-
-        Some(result)
+        scale_time(&value, diff, timescale)
     }
 }
 
@@ -1058,19 +1067,20 @@ pub(crate) fn parse_time_string_to_ticks(input: &str, timescale: &TimeScale) -> 
     let data_exp = timescale.unit.exponent();
     let diff = unit_exp - data_exp;
 
-    let mut result = value;
-    if diff > 0 {
-        let scale = pow10(diff as u32);
-        result *= scale;
-    } else if diff < 0 {
-        let scale = pow10((-diff) as u32);
-        result /= scale;
-    }
+    scale_time(&value, diff, timescale)
+}
 
-    let multiplier = timescale.multiplier.unwrap_or(1);
-    if multiplier != 1 {
-        result /= BigInt::from(multiplier);
-    }
+fn scale_time(value: &BigInt, exponent_diff: i8, timescale: &TimeScale) -> Option<BigInt> {
+    let exponent_diff = exponent_diff - timescale.multiplier_digits() as i8;
+    let result = if exponent_diff > 0 {
+        let scale = pow10(exponent_diff as u8);
+        value * scale
+    } else if exponent_diff < 0 {
+        let scale = pow10((-exponent_diff) as u8);
+        value / scale
+    } else {
+        value.clone()
+    };
 
     Some(result)
 }
@@ -1370,14 +1380,14 @@ mod test {
     fn test_strip_trailing_zeros_and_period() {
         use crate::time::strip_trailing_zeros_and_period;
 
-        assert_eq!(strip_trailing_zeros_and_period("123.000".into()), "123");
-        assert_eq!(strip_trailing_zeros_and_period("123.450".into()), "123.45");
-        assert_eq!(strip_trailing_zeros_and_period("123.456".into()), "123.456");
-        assert_eq!(strip_trailing_zeros_and_period("123.".into()), "123");
-        assert_eq!(strip_trailing_zeros_and_period("123".into()), "123");
-        assert_eq!(strip_trailing_zeros_and_period("0.000".into()), "0");
-        assert_eq!(strip_trailing_zeros_and_period("0.100".into()), "0.1");
-        assert_eq!(strip_trailing_zeros_and_period(String::new()), "");
+        assert_eq!(strip_trailing_zeros_and_period("123.000"), "123");
+        assert_eq!(strip_trailing_zeros_and_period("123.450"), "123.45");
+        assert_eq!(strip_trailing_zeros_and_period("123.456"), "123.456");
+        assert_eq!(strip_trailing_zeros_and_period("123."), "123");
+        assert_eq!(strip_trailing_zeros_and_period("123"), "123");
+        assert_eq!(strip_trailing_zeros_and_period("0.000"), "0");
+        assert_eq!(strip_trailing_zeros_and_period("0.100"), "0.1");
+        assert_eq!(strip_trailing_zeros_and_period(""), "");
     }
 
     #[test]
@@ -2043,11 +2053,11 @@ mod time_input_tests {
     fn test_split_numeric_parts() {
         assert_eq!(
             split_numeric_parts("100").ok(),
-            Some(("100".to_string(), "".to_string()))
+            Some(("100".to_string(), String::new()))
         );
         assert_eq!(
             split_numeric_parts("100.").ok(),
-            Some(("100".to_string(), "".to_string()))
+            Some(("100".to_string(), String::new()))
         );
         assert_eq!(
             split_numeric_parts(".5").ok(),

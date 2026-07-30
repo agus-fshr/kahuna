@@ -287,31 +287,33 @@ impl SystemState {
                                 });
                             }
                         })
-                        .body(|mut body| {
+                        .body(|body| {
                             let time_formatter = TimeFormatter::new(
                                 &waves.inner.metadata().timescale,
                                 &self.user.wanted_timeunit,
                                 &self.get_time_format(),
                             );
-                            for (marker_idx, row_marker_time, row_widget_text) in &markers {
-                                body.row(row_height, |mut row| {
-                                    row.col(|ui| {
-                                        if ui.label(row_widget_text.clone()).clicked() {
-                                            msgs.push(marker_click_message(
-                                                *marker_idx,
-                                                waves.cursor.as_ref(),
-                                            ));
-                                        }
-                                    });
-                                    for (_, col_marker_time, _) in &markers {
-                                        let diff = time_formatter
-                                            .format(&(*row_marker_time - *col_marker_time));
-                                        row.col(|ui| {
-                                            ui.label(diff);
-                                        });
+                            let numbber_of_markers = markers.len();
+                            body.rows(row_height, numbber_of_markers, |mut row| {
+                                let row_idx = row.index();
+                                let (marker_idx, row_marker_time, row_widget_text) =
+                                    &markers[row_idx];
+                                row.col(|ui| {
+                                    if ui.label(row_widget_text.clone()).clicked() {
+                                        msgs.push(marker_click_message(
+                                            *marker_idx,
+                                            waves.cursor.as_ref(),
+                                        ));
                                     }
                                 });
-                            }
+                                for (_, col_marker_time, _) in &markers {
+                                    let diff = time_formatter
+                                        .format(&(*row_marker_time - *col_marker_time));
+                                    row.col(|ui| {
+                                        ui.label(diff);
+                                    });
+                                }
+                            });
                         });
                     ui.add_space(15.);
                     if ui.button("Close").clicked() {

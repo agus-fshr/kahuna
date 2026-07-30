@@ -110,8 +110,8 @@ impl Annotatable for ArrowAnnotation {
     fn get_type(&self) -> &str {
         DEFAULT_TYPE
     }
-    fn set_name(&mut self, name: String) {
-        self.annotation_data.name = name;
+    fn set_name(&mut self, name: &str) {
+        self.annotation_data.name = name.to_string();
     }
 
     fn get_name(&self) -> String {
@@ -209,7 +209,7 @@ impl Annotatable for ArrowAnnotation {
             arrow_annotation.is_selected();
         }
 
-        let max_timestamp: BigInt = waves.safe_max_timestamp();
+        let max_timestamp = waves.safe_max_timestamp();
         let viewport = waves.viewports[viewport_idx];
         let frame_width = ctx.cfg.canvas_size.x;
 
@@ -305,7 +305,7 @@ impl Annotatable for ArrowAnnotation {
                 .annotation_groups
                 .iter()
                 .find(|group| group.annotations.contains(&self.get_id()))
-                .map_or(DEFAULT_GROUP_NAME.to_string(), |group| group.name.clone());
+                .map_or(DEFAULT_GROUP_NAME, |group| &group.name);
             hover_response.on_hover_ui(|ui| {
                 self.draw_hover_info(group_name, ui, (&hover_start_time, &hover_end_time));
             });

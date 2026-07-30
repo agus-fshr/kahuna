@@ -540,7 +540,7 @@ impl SystemState {
         let start_pos = (ctx.to_screen)(start_location.x, start_location.y);
         let end_pos = (ctx.to_screen)(end_location.x, end_location.y);
 
-        let time_from: BigInt = waves.viewports[viewport_idx].as_time_bigint(
+        let time_from = waves.viewports[viewport_idx].as_time_bigint(
             start_location.x,
             frame_width,
             max_timestamp,
@@ -548,7 +548,7 @@ impl SystemState {
 
         let snap_pos = Some(Pos2::new(end_location.x, end_location.y - offset));
 
-        let time_to: BigInt = self
+        let time_to = self
             .snap_to_edge(snap_pos, waves, frame_width, viewport_idx)
             .unwrap_or_else(|| {
                 waves.viewports[viewport_idx].as_time_bigint(

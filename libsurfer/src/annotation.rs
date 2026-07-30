@@ -66,7 +66,7 @@ impl Annotatable for Annotation {
         }
     }
 
-    fn set_name(&mut self, name: String) {
+    fn set_name(&mut self, name: &str) {
         match self {
             Annotation::Arrow(a) => a.set_name(name),
             Annotation::Rect(r) => r.set_name(name),
@@ -247,7 +247,7 @@ impl Annotatable for Annotation {
 pub trait Annotatable {
     fn get_id(&self) -> Id;
     fn get_type(&self) -> &str;
-    fn set_name(&mut self, name: String);
+    fn set_name(&mut self, name: &str);
     fn get_name(&self) -> String;
     fn is_selected(&mut self);
     fn set_visibility(&mut self, visible: bool);
@@ -369,7 +369,7 @@ pub trait Annotatable {
 
     fn draw_hover_info(
         &self,
-        group_name: String,
+        group_name: &str,
         ui: &mut egui::Ui,
         (time_start_str, time_end_str): (&str, &str),
     ) {

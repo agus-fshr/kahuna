@@ -156,8 +156,8 @@ impl Annotatable for RectAnnotation {
         DEFAULT_TYPE
     }
 
-    fn set_name(&mut self, name: String) {
-        self.annotation_data.name = name;
+    fn set_name(&mut self, name: &str) {
+        self.annotation_data.name = name.to_string();
     }
 
     fn get_name(&self) -> String {
@@ -253,11 +253,7 @@ impl Annotatable for RectAnnotation {
         rectangle_annotation.annotation_data.id =
             egui::Id::new(("rectangle", self.annotation_data.id, viewport_idx));
 
-        let (from_y, to_y) = rectangle_annotation.resolve_y_positions(waves);
-
-        if let Some(to_y) = to_y
-            && let Some(from_y) = from_y
-        {
+        if let (Some(from_y), Some(to_y)) = rectangle_annotation.resolve_y_positions(waves) {
             rectangle_annotation.compute_rect(
                 from_y,
                 to_y,
@@ -279,7 +275,7 @@ impl Annotatable for RectAnnotation {
                 .annotation_groups
                 .iter()
                 .find(|group| group.annotations.contains(&self.get_id()))
-                .map_or(DEFAULT_GROUP_NAME.to_string(), |group| group.name.clone());
+                .map_or(DEFAULT_GROUP_NAME, |group| &group.name);
             let res = ui.add(rectangle_annotation).on_hover_ui(|ui| {
                 self.draw_hover_info(group_name, ui, (&hover_start_time, &hover_end_time));
             });
