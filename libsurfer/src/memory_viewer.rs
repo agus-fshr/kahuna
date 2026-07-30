@@ -17,6 +17,7 @@ pub enum MemoryViewerFormat {
     Binary,
 }
 impl MemoryViewerFormat {
+    #[must_use]
     pub fn label(self) -> &'static str {
         match self {
             Self::Decimal => "Decimal",
@@ -459,23 +460,25 @@ impl SystemState {
                             .and_then(|first_var_ref| {
                                 wave_container.variable_meta(first_var_ref).ok()
                             })
-                            .map(|meta| {
-                                self.translators
-                                    .all_translator_names()
-                                    .into_iter()
-                                    .partition(|translator_name| {
-                                        let translator =
-                                            self.translators.get_translator(translator_name);
+                            .map_or_else(
+                                || (vec![], self.translators.all_translator_names()),
+                                |meta| {
+                                    self.translators
+                                        .all_translator_names()
+                                        .into_iter()
+                                        .partition(|translator_name| {
+                                            let translator =
+                                                self.translators.get_translator(translator_name);
 
-                                        match translator.translates(&meta) {
-                                            Ok(TranslationPreference::Yes) => true,
-                                            Ok(TranslationPreference::Prefer) => true,
-                                            Ok(TranslationPreference::No) => false,
-                                            Err(_) => false,
-                                        }
-                                    })
-                            })
-                            .unwrap_or_else(|| (vec![], self.translators.all_translator_names()));
+                                            match translator.translates(&meta) {
+                                                Ok(TranslationPreference::Yes) => true,
+                                                Ok(TranslationPreference::Prefer) => true,
+                                                Ok(TranslationPreference::No) => false,
+                                                Err(_) => false,
+                                            }
+                                        })
+                                },
+                            );
 
                     preferred_translators.sort_by(|a, b| numeric_sort::cmp(a, b));
                     bad_translators.sort_by(|a, b| numeric_sort::cmp(a, b));

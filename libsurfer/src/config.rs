@@ -1305,8 +1305,7 @@ pub fn find_local_configs() -> Vec<PathBuf> {
             let root = dir
                 .ancestors()
                 .last()
-                .map(Path::to_path_buf)
-                .unwrap_or_else(|| PathBuf::from("/"));
+                .map_or_else(|| PathBuf::from("/"), Path::to_path_buf);
             search_upward(dir, root, LOCAL_DIR)
                 .into_iter()
                 .filter(|p| p.is_dir()) // Only keep directories and ignore plain files.

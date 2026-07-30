@@ -305,8 +305,7 @@ impl Annotatable for ArrowAnnotation {
                 .annotation_groups
                 .iter()
                 .find(|group| group.annotations.contains(&self.get_id()))
-                .map(|group| group.name.clone())
-                .unwrap_or(DEFAULT_GROUP_NAME.to_string());
+                .map_or(DEFAULT_GROUP_NAME.to_string(), |group| group.name.clone());
             hover_response.on_hover_ui(|ui| {
                 self.draw_hover_info(group_name, ui, (&hover_start_time, &hover_end_time));
             });

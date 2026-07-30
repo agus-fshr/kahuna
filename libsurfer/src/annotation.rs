@@ -380,7 +380,7 @@ pub trait Annotatable {
             egui::Stroke::new(0.2, egui::Color32::LIGHT_GRAY),
         ));
         ui.label(format!("Name: {}", self.get_name()));
-        ui.label(format!("Group: {}", group_name));
+        ui.label(format!("Group: {group_name}"));
         ui.label(format!("Type: {}", self.get_type()));
         ui.label(format!("ID: {:?}", self.get_id()));
     }

@@ -823,8 +823,7 @@ impl SystemState {
                     .abs()
                     .total_cmp(&(b.center().y - pointer.y).abs())
             })
-            .map(|(idx, _)| idx)
-            .unwrap_or(0);
+            .map_or(0, |(idx, _)| idx);
 
         let mut centers: Vec<f32> = rendered
             .iter()
@@ -877,9 +876,9 @@ impl SystemState {
 
         if new_row {
             let y = if row == 0 {
-                row_rects.first().map(Rect::top).unwrap_or(0.0)
+                row_rects.first().map_or(0.0, Rect::top)
             } else if row >= row_rects.len() {
-                row_rects.last().map(Rect::bottom).unwrap_or(0.0)
+                row_rects.last().map_or(0.0, Rect::bottom)
             } else {
                 row_rects[row - 1].bottom().midpoint(row_rects[row].top())
             };

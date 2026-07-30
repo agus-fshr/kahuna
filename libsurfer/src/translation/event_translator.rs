@@ -31,7 +31,7 @@ impl Translator<VarId, ScopeId, Message> for EventTranslator {
     fn translates(&self, variable: &VariableMeta) -> eyre::Result<super::TranslationPreference> {
         if variable.num_bits == Some(0) {
             match &variable.variable_type {
-                Some(VariableType::VCDEvent) | Some(VariableType::EventParameter) => {
+                Some(VariableType::VCDEvent | VariableType::EventParameter) => {
                     Ok(super::TranslationPreference::Prefer)
                 }
                 _ => Ok(super::TranslationPreference::No),

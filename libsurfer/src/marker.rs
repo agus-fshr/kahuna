@@ -25,6 +25,7 @@ const MAX_MARKER_INDEX: u8 = 254;
 const CURSOR_MARKER_IDX: u8 = 255;
 
 impl WaveData {
+    #[must_use]
     pub fn resolve_marker_name(&self, name: &str) -> Option<u8> {
         if let Some(id_str) = name.strip_prefix('#') {
             return id_str.parse::<u8>().ok();

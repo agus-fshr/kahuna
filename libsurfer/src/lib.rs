@@ -412,7 +412,7 @@ impl SystemState {
                 self.invalidate_draw_commands();
             }
             Message::AddStreamOrGeneratorFromName(scope, name) => {
-                self.save_current_canvas(format!("Add Stream/Generator from name: {}", &name));
+                self.save_current_canvas(format!("Add Stream/Generator from name: {name}"));
                 let waves = self.user.waves.as_mut()?;
                 waves.add_stream_or_generator_from_name(scope, name)?;
                 self.invalidate_draw_commands();
@@ -1486,7 +1486,7 @@ impl SystemState {
             Message::SetShowVariableDirection(v) => self.user.show_variable_direction = Some(v),
             Message::SetTransitionValue(v) => self.user.transition_value = Some(v),
             Message::SetDrawVectorUnknownsAsLine(v) => {
-                self.user.draw_vector_unknowns_as_line = Some(v)
+                self.user.draw_vector_unknowns_as_line = Some(v);
             }
             Message::SetShowIndices(v) => {
                 let new = v;

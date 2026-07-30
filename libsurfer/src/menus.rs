@@ -13,8 +13,8 @@ use crate::hierarchy::{HierarchyStyle, ParameterDisplayLocation, ScopeExpandType
 use crate::keyboard_shortcuts::ShortcutAction;
 use crate::message::MessageTarget;
 use crate::trace_style::TraceStyle;
-use crate::wave_container::{FieldRef, VariableRefExt};
-use crate::wave_data::ScopeType;
+use crate::wave_container::{FieldRef, VariableRef, VariableRefExt};
+use crate::wave_data::{ScopeType, WaveData};
 use crate::wave_source::LoadOptions;
 use crate::{
     SystemState,
@@ -915,50 +915,13 @@ impl SystemState {
             return;
         };
 
-        let (mut preferred_translators, mut bad_translators) = if path.field.is_empty() {
-            self.translators
-                .all_translator_names()
-                .into_iter()
-                .partition(|translator_name| {
-                    let t = self.translators.get_translator(translator_name);
-
-                    if self
-                        .user
-                        .blacklisted_translators
-                        .contains(&(path.root.clone(), (*translator_name).to_string()))
-                    {
-                        false
-                    } else {
-                        match waves
-                            .inner
-                            .as_waves()
-                            .unwrap()
-                            .variable_meta(&path.root)
-                            .and_then(|meta| t.translates(&meta))
-                            .context(format!(
-                                "Failed to check if {translator_name} translates {}",
-                                path.root.full_path_string_no_index(),
-                            )) {
-                            Ok(TranslationPreference::Yes) => true,
-                            Ok(TranslationPreference::Prefer) => true,
-                            Ok(TranslationPreference::No) => false,
-                            Err(e) => {
-                                msgs.push(Message::BlacklistTranslator(
-                                    path.root.clone(),
-                                    (*translator_name).to_string(),
-                                ));
-                                msgs.push(Message::Error(e));
-                                false
-                            }
-                        }
-                    }
-                })
+        let (preferred_translators, bad_translators) = if path.field.is_empty() {
+            self.partition_translators_for_var(&path.root, msgs, waves)
         } else {
-            (self.translators.basic_translator_names(), vec![])
+            let mut preferred = self.translators.basic_translator_names();
+            preferred.sort_by(|a, b| numeric_sort::cmp(a, b));
+            (preferred, vec![])
         };
-
-        preferred_translators.sort_by(|a, b| numeric_sort::cmp(a, b));
-        bad_translators.sort_by(|a, b| numeric_sort::cmp(a, b));
 
         let selected_translator = match clicked_item {
             DisplayedItem::Variable(var) => Some(var),
@@ -999,6 +962,56 @@ impl SystemState {
                 });
             }
         });
+    }
+
+    pub(crate) fn partition_translators_for_var(
+        &self,
+        var: &VariableRef,
+        msgs: &mut Vec<Message>,
+        waves: &WaveData,
+    ) -> (Vec<&str>, Vec<&str>) {
+        let (mut preferred_translators, mut bad_translators): (Vec<&str>, Vec<&str>) = self
+            .translators
+            .all_translator_names()
+            .into_iter()
+            .partition(|translator_name| {
+                let t = self.translators.get_translator(translator_name);
+
+                if self
+                    .user
+                    .blacklisted_translators
+                    .contains(&(var.clone(), (*translator_name).to_string()))
+                {
+                    false
+                } else {
+                    match waves
+                        .inner
+                        .as_waves()
+                        .unwrap()
+                        .variable_meta(var)
+                        .and_then(|meta| t.translates(&meta))
+                        .context(format!(
+                            "Failed to check if {translator_name} translates {}",
+                            var.full_path_string_no_index(),
+                        )) {
+                        Ok(TranslationPreference::Yes) => true,
+                        Ok(TranslationPreference::Prefer) => true,
+                        Ok(TranslationPreference::No) => false,
+                        Err(e) => {
+                            msgs.push(Message::BlacklistTranslator(
+                                var.clone(),
+                                (*translator_name).to_string(),
+                            ));
+                            msgs.push(Message::Error(e));
+                            false
+                        }
+                    }
+                }
+            });
+        preferred_translators.sort_by(|a, b| numeric_sort::cmp(a, b));
+        bad_translators.sort_by(|a, b| numeric_sort::cmp(a, b));
+
+        (preferred_translators, bad_translators)
     }
 }
 

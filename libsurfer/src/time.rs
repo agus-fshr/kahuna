@@ -316,7 +316,7 @@ fn format_locale(time: &str, cache: &LocaleFormatCache) -> String {
                 .join(cache.thousands_sep.as_str());
             format!(
                 "{integer_result}{decimal_point}{fractional_part}",
-                decimal_point = &cache.decimal_point
+                decimal_point = cache.decimal_point
             )
         } else {
             group_n_chars(time, cache.grouping[0] as usize).join(cache.thousands_sep.as_str())
@@ -448,7 +448,7 @@ impl TimeFormatter {
             } else {
                 &self.space_string
             },
-            unit = &unit_string
+            unit = unit_string
         )
     }
 }
@@ -810,7 +810,7 @@ impl SystemState {
 
         if dropdown_enabled {
             // Use the provided id_prefix to create a unique egui id for the combo box
-            let combo_id = format!("{}-unit", id_prefix);
+            let combo_id = format!("{id_prefix}-unit");
             egui::ComboBox::new(combo_id, "")
                 .width(32.0)
                 .selected_text(state.selected_unit.to_string())

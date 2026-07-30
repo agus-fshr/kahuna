@@ -106,8 +106,7 @@ impl SystemState {
             .waves
             .as_ref()
             .and_then(|waves| source_file_stem(&waves.source))
-            .map(sanitize_file_stem)
-            .unwrap_or("surfer_state");
+            .map_or("surfer_state", sanitize_file_stem);
 
         format!("{stem}.{STATE_FILE_EXTENSION}")
     }

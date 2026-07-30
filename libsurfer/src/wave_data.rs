@@ -1063,7 +1063,7 @@ impl WaveData {
     pub fn num_timestamps(&self) -> Option<BigInt> {
         self.inner
             .max_timestamp()
-            .and_then(|r| if r.is_zero() { None } else { Some(r) })
+            .filter(|r| !r.is_zero())
             .and_then(|r| r.to_bigint())
     }
 
