@@ -1488,15 +1488,15 @@ impl SystemState {
             Message::SetDrawVectorUnknownsAsLine(v) => {
                 self.user.draw_vector_unknowns_as_line = Some(v);
             }
+            Message::SetFocusHighlight(focus_highlight) => {
+                self.user.focus_highlight = Some(focus_highlight);
+            }
             Message::SetShowIndices(v) => {
                 let new = v;
                 self.user.show_variable_indices = Some(new);
                 let waves = self.user.waves.as_mut()?;
                 waves.display_variable_indices = new;
                 waves.compute_variable_display_names();
-            }
-            Message::SetHighlightFocused(highlight) => {
-                self.user.highlight_focused = Some(highlight);
             }
             Message::HideCommandPrompt => {
                 *self.command_prompt_text.borrow_mut() = String::new();

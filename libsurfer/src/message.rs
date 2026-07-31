@@ -14,7 +14,7 @@ use crate::annotation_list::AnnotationGroup;
 use crate::arrow::{ArrowHeadMode, WavePoint};
 use crate::async_util::AsyncJob;
 use crate::comment::Comment;
-use crate::config::{PrimaryMouseDrag, TransitionValue};
+use crate::config::{FocusHighlight, PrimaryMouseDrag, TransitionValue};
 use crate::displayed_item_tree::{ItemIndex, VisibleItemIndex};
 use crate::frame_buffer::FrameBufferColorMode;
 use crate::graphics::{Graphic, GraphicId, GraphicsY};
@@ -303,7 +303,6 @@ pub enum Message {
     ///
     /// Passing None resets it to default.
     SetTimeStringFormatting(Option<TimeStringFormatting>),
-    SetHighlightFocused(bool),
     CommandPromptClear,
     CommandPromptUpdate {
         suggestions: Vec<(String, Vec<bool>)>,
@@ -363,6 +362,7 @@ pub enum Message {
     SetContinuousRedraw(bool),
     SetCursorWindowVisible(bool),
     SetDrawVectorUnknownsAsLine(bool),
+    SetFocusHighlight(FocusHighlight),
     SetHierarchyStyle(HierarchyStyle),
     SetArrowKeyBindings(ArrowKeyBindings),
     SetPrimaryMouseDragBehavior(PrimaryMouseDrag),

@@ -21,7 +21,7 @@ use crate::{
     Message, MoveDir, StartupParams, SystemState, WaveSource,
     async_util::AsyncJob,
     clock_highlighting::ClockHighlightType,
-    config::{SurferConfig, TransitionValue},
+    config::{FocusHighlight, SurferConfig, TransitionValue},
     displayed_item::{DisplayedFieldRef, DisplayedItemRef},
     displayed_item_tree::VisibleItemIndex,
     graphics::{Direction, GrPoint, Graphic, GraphicId, GraphicsY},
@@ -375,7 +375,7 @@ macro_rules! snapshot_ui_with_theme {
             Message::CloseOpenSiblingStateFileDialog {load_state: false, do_not_show_again: true},
             Message::FocusItem(VisibleItemIndex(0)),
             Message::MoveCursorToTransition { next: true, variable: None, skip_zero: true },
-            Message::SetHighlightFocused(true),
+            Message::SetFocusHighlight(FocusHighlight::Background),
             Message::SelectTheme(Some($theme.to_string()))
         ]}
     };
@@ -3568,6 +3568,82 @@ snapshot_ui_with_file_and_msgs! {draw_vector_as_line, "examples/picorv32.vcd", [
         .into(),
     ),
     Message::SetDrawVectorUnknownsAsLine(true)
+]}
+
+snapshot_ui_with_file_and_msgs! {focus_highlight_line_width_and_brightness_shift, "examples/picorv32.vcd", [
+    Message::AddVariables(
+        [
+            VariableRef::from_hierarchy_string("testbench.clk"),
+            VariableRef::from_hierarchy_string("testbench.resetn"),
+            VariableRef::from_hierarchy_string("testbench.trace_data"),
+        ]
+        .into(),
+    ),
+    Message::ZoomToRange {
+        start: 952593.to_bigint().unwrap(),
+        end: 2000047.to_bigint().unwrap(),
+        viewport_idx: 0,
+    },
+    Message::FocusItem(VisibleItemIndex(1)),
+    Message::SetFocusHighlight(FocusHighlight::LineWidthAndBrightnessShift)
+]}
+
+snapshot_ui_with_file_and_msgs! {focus_highlight_brightness_shift, "examples/picorv32.vcd", [
+    Message::AddVariables(
+        [
+            VariableRef::from_hierarchy_string("testbench.clk"),
+            VariableRef::from_hierarchy_string("testbench.resetn"),
+            VariableRef::from_hierarchy_string("testbench.trace_data"),
+        ]
+        .into(),
+    ),
+    Message::ZoomToRange {
+        start: 952593.to_bigint().unwrap(),
+        end: 2000047.to_bigint().unwrap(),
+        viewport_idx: 0,
+    },
+    Message::FocusItem(VisibleItemIndex(2)),
+    Message::SetFocusHighlight(FocusHighlight::BrightnessShift)
+]}
+
+snapshot_ui_with_file_and_msgs! {focus_highlight_brightness_shift_dark_plus_theme, "examples/picorv32.vcd", [
+    Message::AddScope(ScopeRef::from_strs(&["testbench", "top"]), false),
+    Message::ZoomToRange {
+        start: 4965000.to_bigint().unwrap(),
+        end: 5842841.to_bigint().unwrap(),
+        viewport_idx: 0,
+    },
+    Message::SelectTheme(Some("dark+".to_string())),
+    Message::FocusItem(VisibleItemIndex(8)),
+    Message::SetFocusHighlight(FocusHighlight::BrightnessShift)
+]}
+
+snapshot_ui_with_file_and_msgs! {focus_highlight_brightness_shift_light_plus_theme, "examples/picorv32.vcd", [
+    Message::AddScope(ScopeRef::from_strs(&["testbench", "top"]), false),
+    Message::ZoomToRange {
+        start: 4965000.to_bigint().unwrap(),
+        end: 5842841.to_bigint().unwrap(),
+        viewport_idx: 0,
+    },
+    Message::SelectTheme(Some("light+".to_string())),
+    Message::FocusItem(VisibleItemIndex(16)),
+    Message::SetFocusHighlight(FocusHighlight::LineWidthAndBrightnessShift)
+]}
+
+snapshot_ui_with_file_and_msgs! {focus_highlight_background, "examples/analog.vcd", [
+    Message::AddVariables(
+        [
+            VariableRef::from_hierarchy_string("top.clk_cnt"),
+            VariableRef::from_hierarchy_string("top.sine_real"),
+        ]
+        .into(),
+    ),
+    Message::SetAnalogSettings(
+        MessageTarget::Explicit(VisibleItemIndex(1)),
+        Some(crate::displayed_item::AnalogSettings { render_style: crate::displayed_item::AnalogRenderStyle::Interpolated, y_axis_scale: crate::displayed_item::AnalogYAxisScale::Viewport }),
+    ),
+    Message::FocusItem(VisibleItemIndex(1)),
+    Message::SetFocusHighlight(FocusHighlight::Background)
 ]}
 
 /// Snapshot test showing the Theme submenu open with radio buttons.

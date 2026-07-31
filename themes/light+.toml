@@ -21,6 +21,7 @@ wide_opacity = 0.2
 cursor = { color="b63935", width=2 }
 linewidth = 2
 highlight_background = "DAE8FF"
+focus_highlight_brightness_shift = 0.30
 
 [colors]
 Green = "6a9955"

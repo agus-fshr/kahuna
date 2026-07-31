@@ -107,7 +107,7 @@ Controls the initial UI layout and waveform rendering behavior.
 | `transactions_line_height` | `30.0` | non-negative number | Line height for transaction streams. |
 | `zoom_factors` | `[0.5, 0.75, 0.9, 1.0, 1.1, 1.25, 1.5, 2.0, 2.5]` | list of non-negative numbers | Available UI zoom factors. |
 | `default_zoom_factor` | `1.0` | non-negative number | Initial UI zoom factor. |
-| `highlight_focused` | `false` | boolean | Highlight the waveform of the focused item. |
+| `focus_highlight` | `"Off"` | `Off`, `Background`, `LineWidth`, `BrightnessShift`, `LineWidthAndBrightnessShift` | How to highlight the focused waveform. |
 | `move_focus_on_inserted_marker` | `true` | boolean | Move focus to newly inserted markers. |
 | `fill_high_values` | `true` | boolean | Fill the high state in boolean waveforms. |
 | `trace_style` | `"Default"` | `Default`, `Dinotrace`, `Zero` | Digital waveform trace style. `Dinotrace` draws no upper line and a bold lower line for all-zero vectors, and a bold upper line for all-one vectors. `Zero` draws all-zero vectors without the upper line. |

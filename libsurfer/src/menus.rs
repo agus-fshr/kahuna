@@ -7,7 +7,7 @@ use itertools::Itertools;
 use std::sync::atomic::Ordering;
 use surfer_translation_types::{TranslationPreference, Translator};
 
-use crate::config::{PrimaryMouseDrag, TransitionValue};
+use crate::config::{FocusHighlight, PrimaryMouseDrag, TransitionValue};
 use crate::displayed_item_tree::VisibleItemIndex;
 use crate::hierarchy::{HierarchyStyle, ParameterDisplayLocation, ScopeExpandType};
 use crate::keyboard_shortcuts::ShortcutAction;
@@ -499,10 +499,6 @@ impl SystemState {
                     msgs.push(Message::SetShowHierarchyIcons(!self.show_hierarchy_icons()));
                 });
 
-            ui.radio(self.highlight_focused(), "Highlight focused")
-                .clicked()
-                .then(|| msgs.push(Message::SetHighlightFocused(!self.highlight_focused())));
-
             ui.radio(self.fill_high_values(), "Fill high values")
                 .clicked()
                 .then(|| {
@@ -535,6 +531,18 @@ impl SystemState {
                         .then(|| {
                             msgs.push(Message::SetTraceStyle(style));
                         });
+                }
+            });
+            ui.menu_button("Focus highlight", |ui| {
+                for focus_highlight in enum_iterator::all::<FocusHighlight>() {
+                    ui.radio(
+                        self.focus_highlight() == focus_highlight,
+                        focus_highlight.to_string(),
+                    )
+                    .clicked()
+                    .then(|| {
+                        msgs.push(Message::SetFocusHighlight(focus_highlight));
+                    });
                 }
             });
         });

@@ -8,7 +8,9 @@ use crate::{
     CanvasState, StartupParams,
     annotation_list::{AnnotationGroup, DEFAULT_GROUP_NAME},
     clock_highlighting::ClockHighlightType,
-    config::{ArrowKeyBindings, AutoLoad, PrimaryMouseDrag, SurferConfig, TransitionValue},
+    config::{
+        ArrowKeyBindings, AutoLoad, FocusHighlight, PrimaryMouseDrag, SurferConfig, TransitionValue,
+    },
     data_container::DataContainer,
     dialog::{OpenSiblingStateFileDialog, ReloadWaveformDialog},
     displayed_item_tree::{DisplayedItemTree, VisibleItemIndex},
@@ -64,8 +66,6 @@ pub struct UserState {
     pub(crate) show_parameters_in_scopes: Option<bool>,
     #[serde(default)]
     pub(crate) parameter_display_location: Option<ParameterDisplayLocation>,
-    #[serde(default)]
-    pub(crate) highlight_focused: Option<bool>,
     #[serde(default)]
     pub(crate) fill_high_values: Option<bool>,
     #[serde(default)]
@@ -142,6 +142,8 @@ pub struct UserState {
     pub(crate) toolbar_group_rows: Vec<Vec<String>>,
     #[serde(default)]
     pub(crate) draw_vector_unknowns_as_line: Option<bool>,
+    #[serde(default)]
+    pub(crate) focus_highlight: Option<FocusHighlight>,
 
     // Path of last saved-to state file
     // Do not serialize as this causes a few issues and doesn't help:
@@ -194,7 +196,6 @@ impl Default for UserState {
             show_hierarchy_icons: None,
             show_parameters_in_scopes: None,
             parameter_display_location: None,
-            highlight_focused: None,
             fill_high_values: None,
             primary_button_drag_behavior: None,
             arrow_key_bindings: None,
@@ -240,6 +241,7 @@ impl Default for UserState {
             toolbar_group_enabled: HashMap::new(),
             toolbar_group_rows: Vec::new(),
             draw_vector_unknowns_as_line: None,
+            focus_highlight: None,
         }
     }
 }

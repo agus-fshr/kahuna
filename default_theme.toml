@@ -51,6 +51,8 @@ drag_threshold = 1.0
 drag_hint_color = "#bfbfbf"
 drag_hint_width = 2.0
 highlight_background = "#37485E"
+focus_highlight_line_width_multiplier = 1.5
+focus_highlight_brightness_shift = 0.25
 
 [colors]
 Green = "#6a9955"

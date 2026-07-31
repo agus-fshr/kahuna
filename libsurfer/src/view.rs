@@ -1,5 +1,5 @@
 use crate::{
-    config::{ThemeColorPair, TransitionValue},
+    config::{FocusHighlight, ThemeColorPair, TransitionValue},
     dialog::{draw_open_sibling_state_file_dialog, draw_reload_waveform_dialog},
     displayed_item::DisplayedVariable,
     fzcmd::expand_command,
@@ -1866,7 +1866,7 @@ impl SystemState {
         item_count: usize,
     ) -> Color32 {
         if let Some(focused) = waves.focused_item
-            && self.highlight_focused()
+            && matches!(self.focus_highlight(), FocusHighlight::Background)
             && focused == vidx
         {
             return self.user.config.theme.highlight_background;

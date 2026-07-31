@@ -1,4 +1,5 @@
 use ecolor::Color32;
+use egui::epaint::Rgba;
 use egui::{FontId, PointerButton, Response, Sense, Ui};
 use emath::{Align2, Pos2, Rect, RectTransform, Vec2};
 use epaint::{CornerRadius, CubicBezierShape, PathShape, PathStroke, RectShape, Shape, Stroke};
@@ -18,7 +19,7 @@ use tracing::{error, warn};
 use crate::CachedDrawData::TransactionDrawData;
 use crate::analog_renderer::{AnalogDrawingCommand, variable_analog_draw_commands};
 use crate::clock_highlighting::draw_clock_edge_marks;
-use crate::config::SurferTheme;
+use crate::config::{FocusHighlight, SurferTheme};
 use crate::data_container::DataContainer;
 use crate::displayed_item::{
     AnalogSettings, DisplayedFieldRef, DisplayedItemRef, DisplayedVariable,
@@ -1060,6 +1061,20 @@ impl SystemState {
                             super::displayed_item::DisplayedItem::height_scaling_factor,
                         );
                         let y_offset = y_offset + self.user.config.layout.waveforms_gap;
+                        let focus_highlight = if waves.focused_item == Some(drawing_info.vidx()) {
+                            self.focus_highlight()
+                        } else {
+                            FocusHighlight::Off
+                        };
+                        let line_width = if matches!(
+                            focus_highlight,
+                            FocusHighlight::LineWidth | FocusHighlight::LineWidthAndBrightnessShift
+                        ) {
+                            self.user.config.theme.linewidth
+                                * self.user.config.theme.focus_highlight_line_width_multiplier
+                        } else {
+                            self.user.config.theme.linewidth
+                        };
 
                         let color = color.unwrap_or_else(|| {
                             if let Some(DisplayedItem::Variable(variable)) = displayed_item {
@@ -1081,6 +1096,15 @@ impl SystemState {
                                 self.user.config.theme.variable_default
                             }
                         });
+                        let brightness_shift = if matches!(
+                            focus_highlight,
+                            FocusHighlight::BrightnessShift
+                                | FocusHighlight::LineWidthAndBrightnessShift
+                        ) {
+                            Some(self.user.config.theme.focus_highlight_brightness_shift)
+                        } else {
+                            None
+                        };
                         match commands {
                             DrawingCommands::Digital(digital_commands) => {
                                 match digital_commands.drawing_type {
@@ -1102,6 +1126,8 @@ impl SystemState {
                                                 height_scaling_factor,
                                                 draw_clock,
                                                 draw_background,
+                                                line_width,
+                                                brightness_shift,
                                                 ctx,
                                             );
                                         }
@@ -1113,6 +1139,8 @@ impl SystemState {
                                                 color,
                                                 y_offset,
                                                 height_scaling_factor,
+                                                line_width,
+                                                brightness_shift,
                                                 ctx,
                                             );
                                         }
@@ -1143,6 +1171,8 @@ impl SystemState {
                                                 height_scaling_factor,
                                                 ctx,
                                                 text_color,
+                                                line_width,
+                                                brightness_shift,
                                             );
                                         }
                                     }
@@ -1154,6 +1184,7 @@ impl SystemState {
                                     color,
                                     y_offset,
                                     height_scaling_factor,
+                                    brightness_shift,
                                     ctx,
                                 );
                             }
@@ -1399,9 +1430,15 @@ impl SystemState {
         height_scaling_factor: f32,
         ctx: &mut DrawingContext,
         text_color: Color32,
+        line_width: f32,
+        brightness_shift: Option<f32>,
     ) {
         if let Some(prev_result) = &prev_region.inner {
-            let color = prev_result.kind.color(user_color, ctx.theme);
+            let color = apply_brightness_shift(
+                prev_result.kind.color(user_color, ctx.theme),
+                brightness_shift,
+                ctx.theme.canvas_colors.background,
+            );
             let transition_width = (new_x - old_x).min(ctx.theme.vector_transition_width);
 
             let trace_coords =
@@ -1422,7 +1459,7 @@ impl SystemState {
             {
                 let stroke = Stroke {
                     color,
-                    width: self.user.config.theme.linewidth,
+                    width: line_width,
                 };
                 ctx.painter.add(PathShape::line(
                     vec![trace_coords(*old_x, 0.5), trace_coords(*new_x, 0.5)],
@@ -1444,7 +1481,7 @@ impl SystemState {
                 TraceValue::Normal => {
                     let stroke = Stroke {
                         color,
-                        width: self.user.config.theme.linewidth,
+                        width: line_width,
                     };
 
                     ctx.painter.add(PathShape::line(points, stroke));
@@ -1521,17 +1558,23 @@ impl SystemState {
         height_scaling_factor: f32,
         draw_clock_marker: bool,
         draw_background: bool,
+        line_width: f32,
+        brightness_shift: Option<f32>,
         ctx: &mut DrawingContext,
     ) {
         if let (Some(prev_result), Some(new_result)) = (&prev_region.inner, &new_region.inner) {
             let trace_coords =
                 |x, y| (ctx.to_screen)(x, y * ctx.cfg.line_height * height_scaling_factor + offset);
 
-            let (old_height, old_color, old_bg) = prev_result.value.bool_drawing_spec(
-                color,
-                &self.user.config.theme,
-                prev_result.kind,
-            );
+            let bg_color = ctx.theme.canvas_colors.background;
+            let (old_height, old_color, old_bg) = {
+                let (h, c, bg) = prev_result.value.bool_drawing_spec(
+                    color,
+                    &self.user.config.theme,
+                    prev_result.kind,
+                );
+                (h, apply_brightness_shift(c, brightness_shift, bg_color), bg)
+            };
             let (new_height, _, _) =
                 new_result
                     .value
@@ -1557,7 +1600,7 @@ impl SystemState {
 
             let stroke = Stroke {
                 color: old_color,
-                width: self.user.config.theme.linewidth,
+                width: line_width,
             };
 
             if force_anti_alias {
@@ -1596,15 +1639,19 @@ impl SystemState {
         color: Color32,
         offset: f32,
         height_scaling_factor: f32,
+        line_width: f32,
+        brightness_shift: Option<f32>,
         ctx: &mut DrawingContext,
     ) {
+        let color =
+            apply_brightness_shift(color, brightness_shift, ctx.theme.canvas_colors.background);
         if prev_region.inner.is_some() {
             let trace_coords =
                 |x, y| (ctx.to_screen)(x, y * ctx.cfg.line_height * height_scaling_factor + offset);
 
             let stroke = Stroke {
                 color,
-                width: self.user.config.theme.linewidth,
+                width: line_width,
             };
 
             // Draw both at old_x and new_x lines until the drawing commands are reworked to deal with this as a special case
@@ -1809,6 +1856,32 @@ pub(crate) fn draw_vertical_line_at_time(
 }
 
 impl WaveData {}
+
+fn shift_brightness(color: Color32, delta: f32, background: Color32) -> Color32 {
+    // Lighten the color on dark backgrounds (blend toward white),
+    // darken it on light backgrounds (blend toward black).
+    let bg_luminance = crate::config::get_luminance(background);
+    let rgba = Rgba::from(color);
+    let result = if bg_luminance < 0.5 {
+        // Dark background: lighten
+        rgba * (1.0 - delta) + Rgba::WHITE * delta
+    } else {
+        // Light background: darken
+        rgba * (1.0 - delta) + Rgba::BLACK * delta
+    };
+    Color32::from(result)
+}
+
+pub(crate) fn apply_brightness_shift(
+    color: Color32,
+    brightness_shift: Option<f32>,
+    background: Color32,
+) -> Color32 {
+    match brightness_shift {
+        Some(delta) => shift_brightness(color, delta, background),
+        None => color,
+    }
+}
 
 trait VariableExt {
     fn bool_drawing_spec(

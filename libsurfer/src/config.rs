@@ -125,6 +125,15 @@ impl AutoLoad {
     }
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Display, FromStr, PartialEq, Eq, Sequence, Serialize)]
+pub enum FocusHighlight {
+    Off,
+    Background,
+    LineWidth,
+    BrightnessShift,
+    LineWidthAndBrightnessShift,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct SurferConfig {
     pub layout: SurferLayout,
@@ -262,8 +271,8 @@ pub struct SurferLayout {
     /// Default UI zoom factor
     #[serde(deserialize_with = "deserialize_non_negative_f32")]
     default_zoom_factor: f32,
-    /// Highlight the waveform of the focused item?
-    highlight_focused: bool,
+    /// How to highlight the focused waveform
+    focus_highlight: FocusHighlight,
     /// Move the focus to the newly inserted marker?
     move_focus_on_inserted_marker: bool,
     /// Fill high values in boolean waveforms
@@ -355,8 +364,8 @@ impl SurferLayout {
         self.parameter_display_location
     }
     #[must_use]
-    pub fn highlight_focused(&self) -> bool {
-        self.highlight_focused
+    pub fn focus_highlight(&self) -> FocusHighlight {
+        self.focus_highlight
     }
     #[must_use]
     pub fn move_focus_on_inserted_marker(&self) -> bool {
@@ -599,6 +608,12 @@ pub struct SurferTheme {
     /// Variable line width for accented variables
     #[serde(deserialize_with = "deserialize_non_negative_f32")]
     pub thick_linewidth: f32,
+    /// Line width multiplier for focused waveform traces
+    #[serde(deserialize_with = "deserialize_non_negative_f32")]
+    pub focus_highlight_line_width_multiplier: f32,
+    /// Brightness shift (0.0 to 1.0) for focused waveform traces. Lightens the color on dark backgrounds, darkens on light backgrounds.
+    #[serde(deserialize_with = "deserialize_unit_interval_f32")]
+    pub focus_highlight_brightness_shift: f32,
 
     /// Vector transition max width
     #[serde(deserialize_with = "deserialize_non_negative_f32")]
@@ -964,7 +979,7 @@ fn gamma_correction(value: u8) -> f32 {
     }
 }
 
-fn get_luminance(color: Color32) -> f32 {
+pub(crate) fn get_luminance(color: Color32) -> f32 {
     0.2126 * gamma_correction(color.r())
         + 0.7152 * gamma_correction(color.g())
         + 0.0722 * gamma_correction(color.b())
