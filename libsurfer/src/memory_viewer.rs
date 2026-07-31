@@ -4,10 +4,12 @@ use crate::{
     translation::{TranslationResultExt, ValueKindExt},
     wave_container::ScopeRefExt,
 };
-use egui::DragValue;
 use egui::collapsing_header::CollapsingState;
+use egui::{Button, DragValue};
 use egui_extras::{Column, TableBuilder};
 use egui_remixicon::icons;
+use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
+use regex::RegexBuilder;
 use std::rc::Rc;
 use surfer_translation_types::{TranslationPreference, Translator, ValueKind};
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -34,7 +36,11 @@ impl Default for MemoryViewerState {
             name: None,
             jump_to_index: String::new(),
             search_value: String::new(),
+            search_match_mode: ValueMatchMode::Contains,
+            search_case_insensitive: true,
             highlight_value: String::new(),
+            highlight_match_mode: ValueMatchMode::Contains,
+            highlight_case_insensitive: true,
             index_format: MemoryViewerFormat::Decimal,
             value_format: "Hexadecimal".to_string(),
             scroll_to_row: None,
@@ -69,7 +75,24 @@ pub(crate) struct MemoryViewerCacheKey {
     pub filter_mode: ChangeModes,
     pub highlight_mode: ChangeModes,
 }
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ValueMatchMode {
+    Contains,
+    StartsWith,
+    Regex,
+    Fuzzy,
+}
 
+impl ValueMatchMode {
+    fn label(self) -> &'static str {
+        match self {
+            Self::Contains => "Value contains",
+            Self::StartsWith => "Value starts with",
+            Self::Regex => "Regular expression",
+            Self::Fuzzy => "Fuzzy",
+        }
+    }
+}
 #[derive(Clone)]
 pub(crate) struct MemoryViewerCache {
     pub key: MemoryViewerCacheKey,
@@ -118,10 +141,113 @@ fn closest_row_index(rows: &[&MemoryRow], target_index: i64) -> Option<usize> {
         .min_by_key(|(_position, row)| (row.index - target_index).abs())
         .map(|(row_index, _)| row_index)
 }
-fn value_matches(value: &str, pattern: &str) -> bool {
+fn build_value_matcher(
+    pattern: &str,
+    mode: ValueMatchMode,
+    case_insensitive: bool,
+) -> Option<Box<dyn Fn(&str) -> bool>> {
     let pattern = pattern.trim();
 
-    !pattern.is_empty() && value.to_lowercase().contains(&pattern.to_lowercase())
+    if pattern.is_empty() {
+        return None;
+    }
+
+    match mode {
+        ValueMatchMode::Contains => {
+            if case_insensitive {
+                let pattern = pattern.to_lowercase();
+
+                Some(Box::new(move |value| {
+                    value.to_lowercase().contains(&pattern)
+                }))
+            } else {
+                let pattern = pattern.to_string();
+
+                Some(Box::new(move |value| value.contains(&pattern)))
+            }
+        }
+
+        ValueMatchMode::StartsWith => {
+            if case_insensitive {
+                let pattern = pattern.to_lowercase();
+
+                Some(Box::new(move |value| {
+                    value.to_lowercase().starts_with(&pattern)
+                }))
+            } else {
+                let pattern = pattern.to_string();
+
+                Some(Box::new(move |value| value.starts_with(&pattern)))
+            }
+        }
+
+        ValueMatchMode::Regex => {
+            let regex = RegexBuilder::new(pattern)
+                .case_insensitive(case_insensitive)
+                .build()
+                .ok()?;
+
+            Some(Box::new(move |value| regex.is_match(value)))
+        }
+
+        ValueMatchMode::Fuzzy => {
+            let pattern = pattern.to_string();
+
+            let matcher = if case_insensitive {
+                SkimMatcherV2::default().ignore_case()
+            } else {
+                SkimMatcherV2::default().respect_case()
+            };
+
+            Some(Box::new(move |value| {
+                matcher.fuzzy_match(value, &pattern).is_some()
+            }))
+        }
+    }
+}
+fn value_match_menu(ui: &mut egui::Ui, mode: &mut ValueMatchMode, case_insensitive: &mut bool) {
+    ui.checkbox(case_insensitive, "Case insensitive");
+
+    ui.separator();
+
+    for candidate in [
+        ValueMatchMode::Fuzzy,
+        ValueMatchMode::Regex,
+        ValueMatchMode::StartsWith,
+        ValueMatchMode::Contains,
+    ] {
+        ui.radio_value(mode, candidate, candidate.label());
+    }
+}
+fn matching_text_edit(
+    ui: &mut egui::Ui,
+    value: &mut String,
+    hint: &str,
+    width: f32,
+    mode: &mut ValueMatchMode,
+    case_insensitive: &mut bool,
+) {
+    let text_response = ui
+        .add_sized(
+            [width, 20.0],
+            egui::TextEdit::singleline(value).hint_text(hint),
+        )
+        .on_hover_text("Right-click for matching options");
+
+    text_response.context_menu(|ui| {
+        value_match_menu(ui, mode, case_insensitive);
+    });
+
+    if ui
+        .add_enabled(
+            !value.is_empty(),
+            Button::new(icons::CLOSE_FILL).frame(false),
+        )
+        .on_hover_text("Clear")
+        .clicked()
+    {
+        value.clear();
+    }
 }
 fn change_range(
     mode: ChangeModes,
@@ -195,7 +321,13 @@ fn change_mode_dropdown(
             });
     });
 }
-fn highlight_dropdown(ui: &mut egui::Ui, selected: &mut ChangeModes, highlight_value: &mut String) {
+fn highlight_dropdown(
+    ui: &mut egui::Ui,
+    selected: &mut ChangeModes,
+    highlight_value: &mut String,
+    match_mode: &mut ValueMatchMode,
+    case_insensitive: &mut bool,
+) {
     ui.vertical(|ui| {
         CollapsingState::load_with_default_open(
             ui.ctx(),
@@ -207,7 +339,7 @@ fn highlight_dropdown(ui: &mut egui::Ui, selected: &mut ChangeModes, highlight_v
         })
         .body(|ui| {
             ui.allocate_ui_with_layout(
-                egui::vec2(220.0, 0.0),
+                egui::vec2(260.0, 0.0),
                 egui::Layout::top_down(egui::Align::LEFT),
                 |ui| {
                     change_mode_menu(ui, "memory_viewer_highlight_marker", selected);
@@ -215,9 +347,13 @@ fn highlight_dropdown(ui: &mut egui::Ui, selected: &mut ChangeModes, highlight_v
                     ui.horizontal(|ui| {
                         ui.label("Value:");
 
-                        ui.add_sized(
-                            [120.0, 20.0],
-                            egui::TextEdit::singleline(highlight_value).hint_text("Highlight"),
+                        matching_text_edit(
+                            ui,
+                            highlight_value,
+                            "Highlight",
+                            120.0,
+                            match_mode,
+                            case_insensitive,
                         );
                     });
                 },
@@ -399,6 +535,8 @@ impl SystemState {
                         ui,
                         &mut self.memory_viewer.highlight_mode,
                         &mut self.memory_viewer.highlight_value,
+                        &mut self.memory_viewer.highlight_match_mode,
+                        &mut self.memory_viewer.highlight_case_insensitive,
                     );
 
                     ui.checkbox(&mut self.memory_viewer.color_values, "Color values");
@@ -407,12 +545,14 @@ impl SystemState {
                 let mut find_next_requested = false;
                 ui.horizontal(|ui| {
                     ui.label("Find:");
-
-                    ui.add_sized(
-                        [160.0, 20.0],
-                        egui::TextEdit::singleline(&mut self.memory_viewer.search_value),
+                    matching_text_edit(
+                        ui,
+                        &mut self.memory_viewer.search_value,
+                        "Find",
+                        160.0,
+                        &mut self.memory_viewer.search_match_mode,
+                        &mut self.memory_viewer.search_case_insensitive,
                     );
-
                     if ui
                         .add(egui::Button::new(icons::ARROW_UP_LINE).frame(false))
                         .on_hover_text("Previous match")
@@ -537,7 +677,16 @@ impl SystemState {
                 });
 
                 ui.separator();
-
+                let search_matcher = build_value_matcher(
+                    &self.memory_viewer.search_value,
+                    self.memory_viewer.search_match_mode,
+                    self.memory_viewer.search_case_insensitive,
+                );
+                let highlight_matcher = build_value_matcher(
+                    &self.memory_viewer.highlight_value,
+                    self.memory_viewer.highlight_match_mode,
+                    self.memory_viewer.highlight_case_insensitive,
+                );
                 let visible_rows: Vec<_> = rows
                     .iter()
                     .filter(|row| match self.memory_viewer.filter_mode {
@@ -548,14 +697,16 @@ impl SystemState {
                         ChangeModes::ChangedBtwCursorAndMarker(_) => row.changed_for_filter,
                     })
                     .collect();
-                let matching_positions: Vec<usize> = visible_rows
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(position, row)| {
-                        value_matches(&row.value, &self.memory_viewer.search_value)
-                            .then_some(position)
+                let matching_positions: Vec<usize> = search_matcher
+                    .as_ref()
+                    .map(|matcher| {
+                        visible_rows
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(position, row)| matcher(&row.value).then_some(position))
+                            .collect()
                     })
-                    .collect();
+                    .unwrap_or_default();
                 let max_index = rows.iter().map(|row| row.index).max().unwrap_or(0);
                 let text_height = egui::TextStyle::Body
                     .resolve(ui.style())
@@ -699,10 +850,10 @@ impl SystemState {
                                                         ) => row_data.changed_for_highlight,
                                                     };
 
-                                                    let highlighted_by_value = value_matches(
-                                                        &row_data.value,
-                                                        &self.memory_viewer.highlight_value,
-                                                    );
+                                                    let highlighted_by_value =
+                                                        highlight_matcher.as_ref().is_some_and(
+                                                            |matcher| matcher(&row_data.value),
+                                                        );
 
                                                     let is_highlighted = highlighted_by_change
                                                         || highlighted_by_value;
