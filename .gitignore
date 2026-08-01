@@ -23,3 +23,6 @@ examples/save_and_start_with_state.ron
 CLAUDE.md
 CLAUDE.local.md
 .mcp.json
+
+__pycache__/
+*.pyc

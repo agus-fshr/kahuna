@@ -1,0 +1,11 @@
+variable_add tb.clk
+variable_add tb.rst_n
+variable_add tb.counter
+variable_add tb.spi.cs_n
+variable_add tb.spi.sclk
+variable_add tb.spi.mosi
+variable_add tb.spi.miso
+variable_add tb.uart.tx
+variable_add tb.i2c.scl
+variable_add tb.i2c.sda
+zoom_fit
