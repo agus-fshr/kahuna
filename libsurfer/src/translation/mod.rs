@@ -64,7 +64,12 @@ fn integer_numeric_range(num_bits: u32, signed: bool) -> Option<NumericRange> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-static DECODERS_DIR: &str = "decoders";
+static INSTRUCTION_DECODERS_DIR: &str = "instruction-decoders";
+
+/// Reserved for the upcoming protocol decoders. Instruction decoders used to
+/// live here, so a directory with this name is reported rather than loaded.
+#[cfg(not(target_arch = "wasm32"))]
+static RESERVED_DECODERS_DIR: &str = "decoders";
 
 #[cfg(not(target_arch = "wasm32"))]
 static MAPPINGS_DIR: &str = "mappings";
@@ -191,32 +196,47 @@ impl Translator<VarId, ScopeId, Message> for AnyTranslator {
     }
 }
 
-/// Look inside the config directory and inside "$(cwd)/.surfer" for user-defined decoders
-/// To add a new decoder named 'x', add a directory 'x' to the decoders directory
+/// Look inside the config directory and inside "$(cwd)/.surfer" for user-defined instruction decoders
+/// To add a new instruction decoder named 'x', add a directory 'x' to the instruction decoders directory
 /// Inside, multiple toml files can be added which will all be used for decoding 'x'
 /// This is useful e.g., for layering RISC-V extensions
 #[cfg(not(target_arch = "wasm32"))]
-fn find_user_decoders() -> Vec<Arc<DynBasicTranslator>> {
+fn find_user_instruction_decoders() -> Vec<Arc<DynBasicTranslator>> {
     let mut decoders: Vec<Arc<DynBasicTranslator>> = vec![];
     if let Some(proj_dirs) = crate::config::PROJECT_DIR.as_ref() {
-        let mut config_decoders = find_user_decoders_at_path(proj_dirs.config_dir());
+        let mut config_decoders = find_user_instruction_decoders_at_path(proj_dirs.config_dir());
         decoders.append(&mut config_decoders);
     }
 
-    let mut project_decoders = find_user_decoders_at_path(Path::new(crate::config::LOCAL_DIR));
+    let mut project_decoders =
+        find_user_instruction_decoders_at_path(Path::new(crate::config::LOCAL_DIR));
     decoders.append(&mut project_decoders);
 
     decoders
 }
 
-/// Look for user defined decoders in path.
+/// Look for user defined instruction decoders in path.
 #[cfg(not(target_arch = "wasm32"))]
-fn find_user_decoders_at_path(path: &Path) -> Vec<Arc<DynBasicTranslator>> {
+fn find_user_instruction_decoders_at_path(path: &Path) -> Vec<Arc<DynBasicTranslator>> {
     use tracing::{error, info};
 
     let mut decoders: Vec<Arc<DynBasicTranslator>> = vec![];
-    let p = path.join(DECODERS_DIR);
-    info!("Looking for user decoders at {}", p.display());
+
+    // Instruction decoders used to be read from `decoders`, which is now reserved
+    // for protocol decoders. Point anyone with the old layout at the new name.
+    let reserved = path.join(RESERVED_DECODERS_DIR);
+    if reserved.is_dir() {
+        warn!(
+            "Ignoring {}: the '{}' directory name is reserved for protocol decoders. \
+             Rename it to '{}' to keep loading instruction decoders from it.",
+            reserved.display(),
+            RESERVED_DECODERS_DIR,
+            INSTRUCTION_DECODERS_DIR,
+        );
+    }
+
+    let p = path.join(INSTRUCTION_DECODERS_DIR);
+    info!("Looking for user instruction decoders at {}", p.display());
     let Ok(decoder_dirs) = std::fs::read_dir(p) else {
         return decoders;
     };
@@ -224,7 +244,7 @@ fn find_user_decoders_at_path(path: &Path) -> Vec<Arc<DynBasicTranslator>> {
     for decoder_dir in decoder_dirs.flatten() {
         if decoder_dir.metadata().is_ok_and(|m| m.is_dir()) {
             let Ok(name) = decoder_dir.file_name().into_string() else {
-                warn!("Cannot load decoder. Invalid name.");
+                warn!("Cannot load instruction decoder. Invalid name.");
                 continue;
             };
             let mut tomls = vec![];
@@ -293,7 +313,7 @@ fn find_user_decoders_at_path(path: &Path) -> Vec<Arc<DynBasicTranslator>> {
                         decoders.push(Arc::new(translator));
                     }
                     Err(e) => {
-                        error!("Error while building decoder {name}");
+                        error!("Error while building instruction decoder {name}");
                         for toml in e {
                             for error in toml {
                                 error!("{error}");
@@ -313,13 +333,13 @@ fn find_user_decoders_at_path(path: &Path) -> Vec<Arc<DynBasicTranslator>> {
 fn find_user_mapping_translators() -> Vec<Arc<DynBasicTranslator>> {
     let mut translators: Vec<Arc<DynBasicTranslator>> = vec![];
     if let Some(proj_dirs) = &*crate::config::PROJECT_DIR {
-        let mut config_decoders = find_user_mapping_translators_at_path(proj_dirs.config_dir());
-        translators.append(&mut config_decoders);
+        let mut config_translators = find_user_mapping_translators_at_path(proj_dirs.config_dir());
+        translators.append(&mut config_translators);
     }
 
-    let mut project_decoders =
+    let mut project_translators =
         find_user_mapping_translators_at_path(Path::new(crate::config::LOCAL_DIR));
-    translators.append(&mut project_decoders);
+    translators.append(&mut project_translators);
 
     translators
 }
@@ -412,7 +432,7 @@ pub fn all_translators() -> TranslatorList {
     ];
 
     #[cfg(not(target_arch = "wasm32"))]
-    basic_translators.append(&mut find_user_decoders());
+    basic_translators.append(&mut find_user_instruction_decoders());
 
     #[cfg(not(target_arch = "wasm32"))]
     basic_translators.append(&mut find_user_mapping_translators());

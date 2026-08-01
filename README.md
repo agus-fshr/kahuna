@@ -223,6 +223,18 @@ Features added on top of upstream Surfer:
 - [ ] Protocol decoders
   - [ ] Decoder framework (waveform -> transaction stream)
   - [ ] Rendering decoded transactions in the waveform view
+- [x] Renamed upstream's "decoders" to "instruction decoders", freeing the
+      name for the above
+
+### A note on "decoder"
+
+Kahuna uses **decoder** for protocol decoders only: stateful, spanning several
+signals over time, producing transactions. What upstream Surfer calls a
+"decoder" — a stateless, per-signal, TOML-defined translation of one n-bit
+value via the [instruction-decoder](https://github.com/ics-jku/instruction-decoder)
+crate — is called an **instruction decoder** here, and is configured from an
+`instruction-decoders` directory rather than `decoders`. See
+[the docs](docs/plugins/instruction-decoders.md).
 
 ## License
 

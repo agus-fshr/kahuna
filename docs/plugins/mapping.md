@@ -1,6 +1,6 @@
 # Mapping Translators
 
-A simpler variant of [decoders](decoders) is the mapping translator.
+A simpler variant of [instruction decoders](instruction-decoders) is the mapping translator.
 This can convert bit-vector values into text using a simple configuration file.
 
 The configuration files are located either in `.surfer/mappings/` in the current working directory or in any of the following, OS-dependent, directories:
