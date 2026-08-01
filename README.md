@@ -1,13 +1,33 @@
-# Surfer
-
-![Pipeline status](https://gitlab.com/surfer-project/surfer/badges/main/pipeline.svg)
-![License](https://img.shields.io/gitlab/license/surfer-project%2Fsurfer)
-![Code coverage](https://gitlab.com/surfer-project/surfer/badges/main/coverage.svg)
-![Contributors](https://img.shields.io/gitlab/contributors/surfer-project%2Fsurfer)
+# Kahuna
 
 A waveform viewer with a focus on a snappy usable interface, and extensibility.
 
+**Kahuna is a fork of [Surfer](https://gitlab.com/surfer-project/surfer).**
+
 ![A screenshot of surfer](snapshots/render_readme_screenshot.png)
+
+## Why a fork?
+
+Surfer is an excellent, fast, extensible waveform viewer, and Kahuna keeps all of
+that intact. The fork exists to build on top of it, with the main goal being:
+
+- **Protocol decoders** — decoding higher-level bus and interface traffic
+  (e.g. serial and on-chip protocols) directly from the waveform, and presenting
+  it as transactions rather than raw bit-vectors.
+
+Beyond that, Kahuna is a place to experiment with additional viewer features and
+quality-of-life improvements that may or may not make sense upstream.
+
+Where possible, changes that are generally useful will be contributed back to
+Surfer. Everything below is inherited from upstream Surfer and still applies
+unless noted otherwise.
+
+### Relationship to upstream
+
+Kahuna tracks the upstream Surfer repository at
+<https://gitlab.com/surfer-project/surfer>. Bug reports and feature requests that
+are not specific to Kahuna's additions are usually better filed upstream. All
+credit for the underlying viewer goes to the Surfer authors and contributors.
 
 ## Documentation
 
@@ -196,6 +216,15 @@ As an indication of the status of the project, here is an incomplete list of sup
 - [x] Configurable color schemes
 - [x] Analog drawing
 
+## Kahuna additions
+
+Features added on top of upstream Surfer:
+
+- [ ] Protocol decoders
+  - [ ] Decoder framework (waveform -> transaction stream)
+  - [ ] Rendering decoded transactions in the waveform view
+
 ## License
 
-Surfer is licensed under the [EUPL-1.2 license](LICENSE-EUPL-1.2.txt).
+Surfer is licensed under the [EUPL-1.2 license](LICENSE-EUPL-1.2.txt), and Kahuna,
+as a fork, is distributed under the same license.
