@@ -4,8 +4,9 @@ use crate::{
     displayed_item::DisplayedVariable,
     fzcmd::expand_command,
     item_drawing_info::{
-        DividerDrawingInfo, GroupDrawingInfo, ItemDrawingInfo, MarkerDrawingInfo,
-        PlaceholderDrawingInfo, StreamDrawingInfo, TimeLineDrawingInfo, VariableDrawingInfo,
+        DecoderDrawingInfo, DividerDrawingInfo, GroupDrawingInfo, ItemDrawingInfo,
+        MarkerDrawingInfo, PlaceholderDrawingInfo, StreamDrawingInfo, TimeLineDrawingInfo,
+        VariableDrawingInfo,
     },
     menus::generic_context_menu,
     time::TimeFormatter,
@@ -237,6 +238,12 @@ impl SystemState {
 
         if let Some(dialog) = self.user.show_open_sibling_state_file_suggestion {
             draw_open_sibling_state_file_dialog(ui, dialog, &mut msgs);
+        }
+
+        if let Some(instance) = self.user.show_decoder_dialog
+            && let Some(waves) = &self.user.waves
+        {
+            crate::decoders::dialog::draw(ui, instance, waves, &mut msgs);
         }
 
         if self.user.show_performance {
@@ -627,6 +634,11 @@ impl SystemState {
             DisplayedItem::Stream(stream) => {
                 self.user.config.layout.transactions_line_height * stream.rows as f32
             }
+            // A decoder row is drawn exactly like a vector variable's row.
+            DisplayedItem::Decoder(_) => {
+                self.user.config.layout.waveforms_line_height
+                    + 2.0 * self.user.config.layout.waveforms_gap
+            }
             DisplayedItem::Divider(_)
             | DisplayedItem::Marker(_)
             | DisplayedItem::TimeLine(_)
@@ -846,7 +858,8 @@ impl SystemState {
                         | DisplayedItem::Placeholder(_)
                         | DisplayedItem::TimeLine(_)
                         | DisplayedItem::Stream(_)
-                        | DisplayedItem::Group(_) => self.desired_item_row_height(displayed_item),
+                        | DisplayedItem::Group(_)
+                        | DisplayedItem::Decoder(_) => self.desired_item_row_height(displayed_item),
                     };
                     let min = Pos2::new(background_rect.left(), row_top);
                     let max = Pos2::new(background_rect.right(), row_top + row_height);
@@ -899,7 +912,8 @@ impl SystemState {
                         | DisplayedItem::Placeholder(_)
                         | DisplayedItem::TimeLine(_)
                         | DisplayedItem::Stream(_)
-                        | DisplayedItem::Group(_) => {
+                        | DisplayedItem::Group(_)
+                        | DisplayedItem::Decoder(_) => {
                             row_ui
                                 .with_layout(
                                     row_ui
@@ -1540,6 +1554,14 @@ impl SystemState {
                     bottom: fixed_row_rect.bottom(),
                 }));
             }
+            DisplayedItem::Decoder(_) => {
+                drawing_infos.push(ItemDrawingInfo::Decoder(DecoderDrawingInfo {
+                    displayed_field_ref: displayed_id.into(),
+                    vidx,
+                    top: fixed_row_rect.top(),
+                    bottom: fixed_row_rect.bottom(),
+                }));
+            }
             DisplayedItem::Group(_) => {
                 drawing_infos.push(ItemDrawingInfo::Group(GroupDrawingInfo {
                     vidx,
@@ -1707,7 +1729,8 @@ impl SystemState {
                     | ItemDrawingInfo::TimeLine(_)
                     | ItemDrawingInfo::Stream(_)
                     | ItemDrawingInfo::Group(_)
-                    | ItemDrawingInfo::Placeholder(_) => {
+                    | ItemDrawingInfo::Placeholder(_)
+                    | ItemDrawingInfo::Decoder(_) => {
                         ui.label("");
                     }
                 }

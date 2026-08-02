@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::wave_container::VariableRef;
 
+pub mod dialog;
 pub mod spi;
 
 /// A single signal's transitions, as `(time, bit)` pairs sorted by time.

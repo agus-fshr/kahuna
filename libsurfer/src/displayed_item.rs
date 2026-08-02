@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use crate::analog_signal_cache::AnalogCacheEntry;
+use crate::decoders::{DecoderSettings, Protocol, RoleBindings};
 use surfer_translation_types::VariableInfo;
 
 use crate::translation::DynTranslator;
@@ -66,6 +67,37 @@ pub enum DisplayedItem {
     Placeholder(DisplayedPlaceholder),
     Stream(DisplayedStream),
     Group(DisplayedGroup),
+    Decoder(DisplayedDecoder),
+}
+
+/// One output row of a protocol decoder.
+///
+/// A decoder produces several rows (SPI produces MOSI and MISO), and each is
+/// its own item so that it can be coloured, renamed, reordered and removed like
+/// any other row. Items belonging to the same decoder share an `instance` id,
+/// which is how a settings change reaches all of its rows at once.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DisplayedDecoder {
+    pub instance: DecoderInstance,
+    pub settings: DecoderSettings,
+    pub bindings: RoleBindings,
+    /// Index into the decoder's output rows.
+    pub lane: usize,
+    pub color: Option<String>,
+    pub background_color: Option<String>,
+    pub display_name: String,
+    pub manual_name: Option<String>,
+}
+
+/// Identifies all rows produced by one configured decoder.
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct DecoderInstance(pub usize);
+
+impl DisplayedDecoder {
+    #[must_use]
+    pub fn protocol(&self) -> Protocol {
+        self.settings.protocol()
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -401,6 +433,7 @@ impl DisplayedItem {
             DisplayedItem::Placeholder(_) => None,
             DisplayedItem::Stream(stream) => stream.color.as_deref(),
             DisplayedItem::Group(group) => group.color.as_deref(),
+            DisplayedItem::Decoder(decoder) => decoder.color.as_deref(),
         }
     }
 
@@ -413,6 +446,7 @@ impl DisplayedItem {
             DisplayedItem::Placeholder(placeholder) => placeholder.color.clone_from(color_name),
             DisplayedItem::Stream(stream) => stream.color.clone_from(color_name),
             DisplayedItem::Group(group) => group.color.clone_from(color_name),
+            DisplayedItem::Decoder(decoder) => decoder.color.clone_from(color_name),
         }
     }
 
@@ -446,6 +480,11 @@ impl DisplayedItem {
                 .unwrap_or(&stream.display_name)
                 .clone(),
             DisplayedItem::Group(group) => group.name.clone(),
+            DisplayedItem::Decoder(decoder) => decoder
+                .manual_name
+                .as_ref()
+                .unwrap_or(&decoder.display_name)
+                .clone(),
         }
     }
 
@@ -501,6 +540,12 @@ impl DisplayedItem {
             DisplayedItem::Group(group) => {
                 group.rich_text(color, style, layout_job);
             }
+            DisplayedItem::Decoder(_) => {
+                RichText::new(self.name())
+                    .color(color)
+                    .line_height(Some(config.layout.waveforms_line_height))
+                    .append_to(layout_job, style, FontSelection::Default, Align::Center);
+            }
         }
     }
 
@@ -527,6 +572,9 @@ impl DisplayedItem {
             DisplayedItem::Group(group) => {
                 group.name = name.unwrap_or_default();
             }
+            DisplayedItem::Decoder(decoder) => {
+                decoder.manual_name = name;
+            }
         }
     }
 
@@ -536,6 +584,7 @@ impl DisplayedItem {
             DisplayedItem::Variable(variable) => variable.manual_name.is_some(),
             DisplayedItem::Placeholder(placeholder) => placeholder.manual_name.is_some(),
             DisplayedItem::Stream(stream) => stream.manual_name.is_some(),
+            DisplayedItem::Decoder(decoder) => decoder.manual_name.is_some(),
             DisplayedItem::Divider(_)
             | DisplayedItem::Marker(_)
             | DisplayedItem::TimeLine(_)
@@ -553,6 +602,7 @@ impl DisplayedItem {
             DisplayedItem::Placeholder(_) => None,
             DisplayedItem::Stream(stream) => stream.background_color.as_deref(),
             DisplayedItem::Group(group) => group.background_color.as_deref(),
+            DisplayedItem::Decoder(decoder) => decoder.background_color.as_deref(),
         }
     }
 
@@ -572,6 +622,9 @@ impl DisplayedItem {
             }
             DisplayedItem::Placeholder(placeholder) => {
                 placeholder.background_color.clone_from(color_name);
+            }
+            DisplayedItem::Decoder(decoder) => {
+                decoder.background_color.clone_from(color_name);
             }
             DisplayedItem::Stream(stream) => {
                 stream.background_color.clone_from(color_name);

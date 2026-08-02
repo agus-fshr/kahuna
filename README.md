@@ -220,9 +220,12 @@ As an indication of the status of the project, here is an incomplete list of sup
 
 Features added on top of upstream Surfer:
 
-- [ ] Protocol decoders
-  - [ ] Decoder framework (waveform -> transaction stream)
-  - [ ] Rendering decoded transactions in the waveform view
+- [x] Protocol decoders ([docs](docs/plugins/protocol-decoders.md))
+  - [x] Decoder framework (waveform -> decoded words)
+  - [x] Rendering decoded words in the waveform view
+  - [x] SPI (all four modes, configurable word size, bit order and CS polarity)
+  - [ ] I2C
+  - [ ] UART
 - [x] Renamed upstream's "decoders" to "instruction decoders", freeing the
       name for the above
 

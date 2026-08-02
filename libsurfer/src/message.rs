@@ -15,6 +15,8 @@ use crate::arrow::{ArrowHeadMode, WavePoint};
 use crate::async_util::AsyncJob;
 use crate::comment::Comment;
 use crate::config::{FocusHighlight, PrimaryMouseDrag, TransitionValue};
+use crate::decoders::{DecoderSettings, Protocol, RoleBindings};
+use crate::displayed_item::DecoderInstance;
 use crate::displayed_item_tree::{ItemIndex, VisibleItemIndex};
 use crate::frame_buffer::FrameBufferColorMode;
 use crate::graphics::{Graphic, GraphicId, GraphicsY};
@@ -477,6 +479,21 @@ pub enum Message {
         before: Option<ItemIndex>,
         items: Option<Vec<DisplayedItemRef>>,
     },
+    /// Add a protocol decoder reading the signals of `items`, or of the
+    /// selected/focused items when `items` is None. Roles are guessed from
+    /// signal names; the settings dialog is opened so they can be corrected.
+    DecoderAdd {
+        protocol: Protocol,
+        items: Option<Vec<DisplayedItemRef>>,
+    },
+    /// Replace the settings and role bindings of every row of one decoder.
+    DecoderConfigure {
+        instance: DecoderInstance,
+        settings: Box<DecoderSettings>,
+        bindings: Box<RoleBindings>,
+    },
+    /// Open (Some) or close (None) the decoder settings dialog.
+    DecoderOpenDialog(Option<DecoderInstance>),
     GroupDissolve(Option<DisplayedItemRef>),
     GroupFold(Option<DisplayedItemRef>),
     GroupUnfold(Option<DisplayedItemRef>),

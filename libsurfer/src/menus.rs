@@ -792,6 +792,27 @@ impl SystemState {
             }
         });
 
+        // "Decode as" acts on the clicked item, which for a group means every
+        // signal inside it.
+        ui.menu_button("Decode as", |ui| {
+            for protocol in crate::decoders::Protocol::ALL {
+                if ui.button(protocol.to_string()).clicked() {
+                    msgs.push(Message::DecoderAdd {
+                        protocol,
+                        items: Some(vec![clicked_item_ref]),
+                    });
+                    ui.close();
+                }
+            }
+        });
+
+        if let DisplayedItem::Decoder(decoder) = clicked_item
+            && ui.button("Decoder settings...").clicked()
+        {
+            msgs.push(Message::DecoderOpenDialog(Some(decoder.instance)));
+            ui.close();
+        }
+
         ui.menu_button("Group", |ui| {
             let info = waves
                 .items_tree

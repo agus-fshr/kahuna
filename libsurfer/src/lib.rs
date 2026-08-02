@@ -2044,6 +2044,56 @@ impl SystemState {
                 let waves = self.user.waves.as_ref()?;
                 dump_tree(waves);
             }
+            Message::DecoderAdd { protocol, items } => {
+                self.save_current_canvas(format!("Add {protocol} decoder"));
+                self.invalidate_draw_commands();
+                let waves = self.user.waves.as_mut()?;
+
+                // Prefer an explicit list, then the selection. With neither,
+                // fall back to every displayed item: invoking this from the
+                // command line after adding a bus's signals is the common case,
+                // and binding against all of them lets role guessing work.
+                let item_refs = items.unwrap_or_else(|| {
+                    let selected = waves
+                        .items_tree
+                        .iter_visible_selected()
+                        .map(|node| node.item_ref)
+                        .collect::<Vec<_>>();
+                    if selected.is_empty() {
+                        waves
+                            .items_tree
+                            .iter()
+                            .map(|node| node.item_ref)
+                            .collect::<Vec<_>>()
+                    } else {
+                        selected
+                    }
+                });
+
+                let signals = waves.signals_of(&item_refs);
+                if signals.is_empty() {
+                    error!("Cannot add a {protocol} decoder: no variables selected");
+                    return None;
+                }
+
+                let target = waves.insert_position(waves.focused_item);
+                let instance = waves.add_decoder(protocol, &signals, target);
+                // Role guessing is a heuristic, so always show what it chose.
+                self.user.show_decoder_dialog = Some(instance);
+            }
+            Message::DecoderConfigure {
+                instance,
+                settings,
+                bindings,
+            } => {
+                self.save_current_canvas("Configure decoder".to_string());
+                self.invalidate_draw_commands();
+                let waves = self.user.waves.as_mut()?;
+                waves.configure_decoder(instance, &settings, &bindings);
+            }
+            Message::DecoderOpenDialog(instance) => {
+                self.user.show_decoder_dialog = instance;
+            }
             Message::GroupNew {
                 name,
                 before,

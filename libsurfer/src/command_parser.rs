@@ -338,6 +338,7 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
             "goto_cursor",
             "goto_marker",
             "dump_tree",
+            "decoder_add",
             "group_marked",
             "group_dissolve",
             "group_fold_recursive",
@@ -1081,6 +1082,22 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
                         }))
                     }),
                 ),
+                "decoder_add" => Some(Command::NonTerminal(
+                    ParamGreed::Word,
+                    crate::decoders::Protocol::ALL
+                        .iter()
+                        .map(std::string::ToString::to_string)
+                        .collect(),
+                    Box::new(|name, _| {
+                        let protocol = crate::decoders::Protocol::ALL
+                            .iter()
+                            .find(|p| p.to_string().eq_ignore_ascii_case(name))?;
+                        Some(Command::Terminal(Message::DecoderAdd {
+                            protocol: *protocol,
+                            items: None,
+                        }))
+                    }),
+                )),
                 "group_dissolve" => Some(Command::Terminal(Message::GroupDissolve(None))),
                 "group_fold_recursive" => {
                     Some(Command::Terminal(Message::GroupFoldRecursive(None)))

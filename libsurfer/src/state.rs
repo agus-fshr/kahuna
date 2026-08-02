@@ -113,6 +113,9 @@ pub struct UserState {
     pub(crate) show_reload_suggestion: Option<ReloadWaveformDialog>,
     #[serde(skip, default)]
     pub(crate) show_open_sibling_state_file_suggestion: Option<OpenSiblingStateFileDialog>,
+    /// Decoder whose settings dialog is open, if any.
+    #[serde(skip, default)]
+    pub(crate) show_decoder_dialog: Option<crate::displayed_item::DecoderInstance>,
     /// Unused, but kept for backward compatibility with old state files.
     pub(crate) variable_name_filter_focused: bool,
     pub(crate) variable_filter: VariableFilter,
@@ -179,6 +182,7 @@ impl UserState {
 impl Default for UserState {
     fn default() -> Self {
         Self {
+            show_decoder_dialog: None,
             config: SurferConfig::default(),
             show_hierarchy: None,
             show_menu: None,
@@ -355,6 +359,7 @@ impl SystemState {
                 (
                     (
                         WaveData {
+                            next_decoder_instance: 0,
                             inner: DataContainer::Waves(*new_waves),
                             source: filename,
                             format,
@@ -449,6 +454,7 @@ impl SystemState {
         let viewports = [viewport].to_vec();
 
         let new_transaction_streams = WaveData {
+            next_decoder_instance: 0,
             inner: DataContainer::Transactions(new_ftr),
             source: filename,
             format,

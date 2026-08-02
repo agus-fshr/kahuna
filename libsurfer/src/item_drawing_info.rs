@@ -42,6 +42,16 @@ pub struct StreamDrawingInfo {
     pub bottom: f32,
 }
 
+/// A decoder row. Carries the key its draw commands were filed under, exactly
+/// as [`VariableDrawingInfo`] does, so the canvas can look them up the same way.
+#[derive(Debug)]
+pub struct DecoderDrawingInfo {
+    pub displayed_field_ref: DisplayedFieldRef,
+    pub vidx: VisibleItemIndex,
+    pub top: f32,
+    pub bottom: f32,
+}
+
 #[derive(Debug)]
 pub struct GroupDrawingInfo {
     pub vidx: VisibleItemIndex,
@@ -64,6 +74,7 @@ pub enum ItemDrawingInfo {
     Stream(StreamDrawingInfo),
     Group(GroupDrawingInfo),
     Placeholder(PlaceholderDrawingInfo),
+    Decoder(DecoderDrawingInfo),
 }
 
 impl ItemDrawingInfo {
@@ -77,6 +88,7 @@ impl ItemDrawingInfo {
             ItemDrawingInfo::Stream(drawing_info) => drawing_info.top,
             ItemDrawingInfo::Group(drawing_info) => drawing_info.top,
             ItemDrawingInfo::Placeholder(drawing_info) => drawing_info.top,
+            ItemDrawingInfo::Decoder(drawing_info) => drawing_info.top,
         }
     }
     #[must_use]
@@ -89,6 +101,7 @@ impl ItemDrawingInfo {
             ItemDrawingInfo::Stream(drawing_info) => drawing_info.bottom,
             ItemDrawingInfo::Group(drawing_info) => drawing_info.bottom,
             ItemDrawingInfo::Placeholder(drawing_info) => drawing_info.bottom,
+            ItemDrawingInfo::Decoder(drawing_info) => drawing_info.bottom,
         }
     }
     #[must_use]
@@ -101,6 +114,7 @@ impl ItemDrawingInfo {
             ItemDrawingInfo::Stream(drawing_info) => drawing_info.vidx,
             ItemDrawingInfo::Group(drawing_info) => drawing_info.vidx,
             ItemDrawingInfo::Placeholder(drawing_info) => drawing_info.vidx,
+            ItemDrawingInfo::Decoder(drawing_info) => drawing_info.vidx,
         }
     }
 

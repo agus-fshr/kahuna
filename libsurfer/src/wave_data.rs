@@ -11,9 +11,10 @@ use tracing::{error, info, warn};
 use crate::annotation::{Annotatable, Annotation};
 use crate::annotation_list::AnnotationGroup;
 use crate::data_container::DataContainer;
+use crate::decoders::{DecoderSettings, Protocol, RoleBindings};
 use crate::displayed_item::{
-    DisplayedDivider, DisplayedFieldRef, DisplayedGroup, DisplayedItem, DisplayedItemRef,
-    DisplayedStream, DisplayedTimeLine, DisplayedVariable,
+    DecoderInstance, DisplayedDecoder, DisplayedDivider, DisplayedFieldRef, DisplayedGroup,
+    DisplayedItem, DisplayedItemRef, DisplayedStream, DisplayedTimeLine, DisplayedVariable,
 };
 use crate::displayed_item_tree::{DisplayedItemTree, ItemIndex, TargetPosition, VisibleItemIndex};
 use crate::graphics::{Graphic, GraphicId};
@@ -65,6 +66,9 @@ pub struct WaveData {
     pub displayed_items: HashMap<DisplayedItemRef, DisplayedItem>,
     /// Tracks the consecutive displayed item refs
     pub display_item_ref_counter: usize,
+    /// Tracks decoder instance ids
+    #[serde(default)]
+    pub next_decoder_instance: usize,
     pub viewports: Vec<Viewport>,
     pub cursor: Option<BigInt>,
     pub markers: HashMap<u8, BigInt>,
@@ -212,6 +216,7 @@ impl WaveData {
 
         let old_max_timestamp = self.max_timestamp();
         let mut new_wavedata = WaveData {
+            next_decoder_instance: self.next_decoder_instance,
             inner: DataContainer::Waves(*new_waves),
             source,
             format,
@@ -358,7 +363,8 @@ impl WaveData {
                     | DisplayedItem::Marker(_)
                     | DisplayedItem::TimeLine(_)
                     | DisplayedItem::Stream(_)
-                    | DisplayedItem::Group(_) => Some((id, i.clone())),
+                    | DisplayedItem::Group(_)
+                    | DisplayedItem::Decoder(_) => Some((id, i.clone())),
                     DisplayedItem::Variable(s) => {
                         s.update(waves, keep_unavailable).map(|r| (id, r))
                     }
@@ -631,6 +637,99 @@ impl WaveData {
             target_position,
             true,
         )
+    }
+
+    /// Add one row per output lane of a decoder over `signals`, all sharing a
+    /// fresh instance id. Returns the instance so the caller can open its
+    /// settings dialog.
+    pub fn add_decoder(
+        &mut self,
+        protocol: Protocol,
+        signals: &[VariableRef],
+        target_position: Option<TargetPosition>,
+    ) -> DecoderInstance {
+        let instance = DecoderInstance(self.next_decoder_instance);
+        self.next_decoder_instance += 1;
+
+        let settings = DecoderSettings::for_protocol(protocol);
+        let bindings = RoleBindings::guess(protocol, signals);
+
+        // Each insert goes *before* the same target, so walking the lanes
+        // backwards leaves them in order on screen.
+        let lane_names = settings.lane_names();
+        for (lane, lane_name) in lane_names.iter().enumerate().rev() {
+            self.insert_item(
+                DisplayedItem::Decoder(DisplayedDecoder {
+                    instance,
+                    settings: settings.clone(),
+                    bindings: bindings.clone(),
+                    lane,
+                    color: None,
+                    background_color: None,
+                    display_name: format!("{protocol} {lane_name}"),
+                    manual_name: None,
+                }),
+                target_position,
+                lane == 0,
+            );
+        }
+        instance
+    }
+
+    /// Apply new settings to every row of one decoder.
+    pub fn configure_decoder(
+        &mut self,
+        instance: DecoderInstance,
+        settings: &DecoderSettings,
+        bindings: &RoleBindings,
+    ) {
+        let lane_names = settings.lane_names();
+        for item in self.displayed_items.values_mut() {
+            if let DisplayedItem::Decoder(decoder) = item
+                && decoder.instance == instance
+            {
+                decoder.settings = settings.clone();
+                decoder.bindings = bindings.clone();
+                // The protocol may have changed the row names; keep the
+                // generated name in step unless the user renamed it by hand.
+                if let Some(name) = lane_names.get(decoder.lane) {
+                    decoder.display_name = format!("{} {name}", settings.protocol());
+                }
+            }
+        }
+    }
+
+    /// Signals referenced by `items`, in tree order.
+    ///
+    /// Naming a group contributes the variables inside it, since marking a
+    /// group as a bus is the intended way to set a decoder up.
+    #[must_use]
+    pub fn signals_of(&self, items: &[DisplayedItemRef]) -> Vec<VariableRef> {
+        let nodes: Vec<_> = self.items_tree.iter().collect();
+        let mut out = vec![];
+
+        for (idx, node) in nodes.iter().enumerate() {
+            if !items.contains(&node.item_ref) {
+                continue;
+            }
+            match self.displayed_items.get(&node.item_ref) {
+                Some(DisplayedItem::Variable(v)) => out.push(v.variable_ref.clone()),
+                Some(DisplayedItem::Group(_)) => {
+                    // Everything deeper than the group, until the tree comes
+                    // back up to its level, is inside it.
+                    for descendant in nodes[idx + 1..].iter().take_while(|n| n.level > node.level) {
+                        if let Some(DisplayedItem::Variable(v)) =
+                            self.displayed_items.get(&descendant.item_ref)
+                        {
+                            out.push(v.variable_ref.clone());
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        out.dedup_by(|a, b| a == b);
+        out
     }
 
     pub fn select_annotation(&mut self, id: Option<Id>) {
@@ -1178,6 +1277,7 @@ mod tests {
 
     fn wave_data_with_rows(top_item_draw_offset: f32) -> WaveData {
         WaveData {
+            next_decoder_instance: 0,
             inner: DataContainer::Empty,
             source: WaveSource::Data,
             format: WaveFormat::Vcd,

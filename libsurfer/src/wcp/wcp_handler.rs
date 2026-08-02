@@ -102,6 +102,12 @@ impl SystemState {
                                     DisplayedItem::Group(item) => {
                                         (item.name.clone(), "Group".to_string())
                                     }
+                                    DisplayedItem::Decoder(item) => (
+                                        item.manual_name
+                                            .clone()
+                                            .unwrap_or(item.display_name.clone()),
+                                        "Decoder".to_string(),
+                                    ),
                                 };
                                 items.push(ItemInfo {
                                     name,

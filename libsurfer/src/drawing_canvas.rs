@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use std::f32::consts::PI;
 use surfer_translation_types::{
     NumericRange, SubFieldFlatTranslationResult, TranslatedValue, ValueKind, VariableInfo,
+    VariableValue,
 };
 use tracing::{error, warn};
 
@@ -21,10 +22,12 @@ use crate::analog_renderer::{AnalogDrawingCommand, variable_analog_draw_commands
 use crate::clock_highlighting::draw_clock_edge_marks;
 use crate::config::{FocusHighlight, SurferTheme};
 use crate::data_container::DataContainer;
+use crate::decoders::{Bit, BitLane, WordKind};
 use crate::displayed_item::{
     AnalogSettings, DisplayedFieldRef, DisplayedItemRef, DisplayedVariable,
 };
-use crate::item_drawing_info::ItemDrawingInfo;
+use crate::displayed_item::{DecoderInstance, DisplayedDecoder};
+use crate::item_drawing_info::{DecoderDrawingInfo, ItemDrawingInfo, VariableDrawingInfo};
 use crate::time::TimeFormatter;
 use crate::tooltips::handle_transaction_tooltip;
 use crate::trace_style::{TraceStyle, TraceValue};
@@ -32,6 +35,7 @@ use crate::transaction_container::{TransactionRef, TransactionStreamRef};
 use crate::translation::{TranslationResultExt, TranslatorList, ValueKindExt, VariableInfoExt};
 use crate::view::{DrawConfig, DrawingContext};
 use crate::viewport::Viewport;
+use crate::wave_container::VariableRef;
 use crate::wave_container::{QueryResult, VariableRefExt};
 use crate::wave_data::WaveData;
 use crate::{
@@ -100,6 +104,19 @@ impl From<&VariableInfo> for DigitalDrawingType {
 pub struct DigitalDrawingCommands {
     pub drawing_type: DigitalDrawingType,
     pub values: Vec<(f32, DrawnRegion)>,
+}
+
+impl DrawnRegion {
+    /// A region carrying a value that did not come from translating a signal,
+    /// as protocol decoders produce.
+    #[must_use]
+    pub fn plain(inner: Option<TranslatedValue>) -> Self {
+        Self {
+            inner,
+            force_anti_alias: false,
+            trace_value: TraceValue::Normal,
+        }
+    }
 }
 
 impl DigitalDrawingCommands {
@@ -497,6 +514,10 @@ impl SystemState {
                 }
                 clock_variable_count += 1;
             }
+        }
+
+        for (field_ref, commands) in decoder_draw_commands(waves, &timestamps) {
+            draw_commands.insert(field_ref, commands);
         }
 
         let clock_edges = self.get_clock_hightlight_data(clock_edges_by_clock);
@@ -1054,8 +1075,15 @@ impl SystemState {
                 .and_then(|color| self.user.config.theme.get_color(color));
 
             match drawing_info {
-                ItemDrawingInfo::Variable(variable_info) => {
-                    if let Some(commands) = draw_commands.get(&variable_info.displayed_field_ref) {
+                ItemDrawingInfo::Variable(VariableDrawingInfo {
+                    displayed_field_ref,
+                    ..
+                })
+                | ItemDrawingInfo::Decoder(DecoderDrawingInfo {
+                    displayed_field_ref,
+                    ..
+                }) => {
+                    if let Some(commands) = draw_commands.get(displayed_field_ref) {
                         let height_scaling_factor = displayed_item.map_or(
                             1.0,
                             super::displayed_item::DisplayedItem::height_scaling_factor,
@@ -1398,6 +1426,7 @@ impl SystemState {
                     waves.draw_ticks(text_color, &ticks, ctx, y_offset, Align2::CENTER_TOP);
                 }
                 ItemDrawingInfo::Variable(_) => {}
+                ItemDrawingInfo::Decoder(_) => {}
                 ItemDrawingInfo::Divider(_) => {}
                 ItemDrawingInfo::Marker(_) => {}
                 ItemDrawingInfo::Group(_) => {}
@@ -1929,4 +1958,131 @@ impl VariableExt for String {
         };
         (height, color, background)
     }
+}
+
+/// Extract a signal's transitions as a [`BitLane`] for a protocol decoder.
+///
+/// Anything that is not a clean single-bit 0 or 1 becomes [`Bit::Invalid`]
+/// rather than being coerced, so a decoder can report an unreliable word
+/// instead of inventing a plausible-looking one.
+fn bit_lane_for(waves: &WaveData, variable: &VariableRef) -> Option<BitLane> {
+    let wave_container = waves.inner.as_waves()?;
+    let signal_id = wave_container.signal_id(variable).ok()?;
+    if !wave_container.is_signal_loaded(&signal_id) {
+        return None;
+    }
+    let accessor = wave_container.signal_accessor(signal_id).ok()?;
+
+    let changes = accessor
+        .iter_changes()
+        .map(|(time, value)| {
+            let bit = match &value {
+                VariableValue::BigUint(v) => {
+                    if *v == BigUint::ZERO {
+                        Bit::Zero
+                    } else if *v == BigUint::from(1u8) {
+                        Bit::One
+                    } else {
+                        Bit::Invalid
+                    }
+                }
+                VariableValue::String(s) => match s.trim() {
+                    "0" => Bit::Zero,
+                    "1" => Bit::One,
+                    _ => Bit::Invalid,
+                },
+            };
+            (time, bit)
+        })
+        .collect();
+
+    Some(BitLane::new(changes))
+}
+
+/// Run every decoder item once and turn the words of the lane each item shows
+/// into per-pixel draw commands.
+///
+/// Items sharing a [`DecoderInstance`] are decoded once between them: SPI's
+/// MOSI and MISO rows come from a single pass over the same clock.
+fn decoder_draw_commands(
+    waves: &WaveData,
+    timestamps: &[(f32, num::BigUint)],
+) -> Vec<(DisplayedFieldRef, DrawingCommands)> {
+    let mut per_instance: HashMap<DecoderInstance, Vec<(DisplayedItemRef, &DisplayedDecoder)>> =
+        HashMap::new();
+    for node in waves.items_tree.iter_visible() {
+        if let Some(DisplayedItem::Decoder(decoder)) = waves.displayed_items.get(&node.item_ref) {
+            per_instance
+                .entry(decoder.instance)
+                .or_default()
+                .push((node.item_ref, decoder));
+        }
+    }
+
+    let mut out = vec![];
+    for (_, items) in per_instance {
+        // Every row of an instance carries the same settings and bindings, so
+        // any of them can drive the decode.
+        let Some((_, first)) = items.first() else {
+            continue;
+        };
+        let lanes: Vec<Option<BitLane>> = first
+            .bindings
+            .signals
+            .iter()
+            .map(|binding| binding.as_ref().and_then(|v| bit_lane_for(waves, v)))
+            .collect();
+        let decoded = first.settings.decode(&lanes);
+
+        for (item_ref, decoder) in &items {
+            let Some(lane) = decoded.get(decoder.lane) else {
+                continue;
+            };
+            let mut commands = DigitalDrawingCommands {
+                drawing_type: DigitalDrawingType::Vector,
+                values: vec![],
+            };
+
+            // Walking the word list alongside the (sorted) pixel timestamps
+            // keeps this linear rather than binary searching per pixel.
+            let mut word_idx = 0usize;
+            let mut prev_word: Option<usize> = None;
+            for (pixel, time) in timestamps {
+                let time = time.to_u64().unwrap_or(u64::MAX);
+                while word_idx < lane.words.len() && lane.words[word_idx].end <= time {
+                    word_idx += 1;
+                }
+                let value = lane
+                    .words
+                    .get(word_idx)
+                    .filter(|w| w.start <= time)
+                    .map(|w| TranslatedValue {
+                        value: w.text.clone(),
+                        kind: match w.kind {
+                            WordKind::Data => ValueKind::Normal,
+                            WordKind::Error => ValueKind::Warn,
+                        },
+                    });
+
+                // Start a new region per *word*, not per distinct text: two
+                // consecutive 0x00 words are two transfers and must be drawn as
+                // two blocks, not merged into one. `None` marks the gaps.
+                let here = value.as_ref().map(|_| word_idx);
+                if here != prev_word || commands.values.is_empty() {
+                    commands.push((*pixel, DrawnRegion::plain(value)));
+                    prev_word = here;
+                }
+            }
+            // A trailing entry gives the last block a right-hand edge to draw to.
+            if let Some((last_pixel, _)) = timestamps.last() {
+                commands.push((*last_pixel, DrawnRegion::plain(None)));
+            }
+
+            out.push((
+                DisplayedFieldRef::from(*item_ref),
+                DrawingCommands::Digital(commands),
+            ));
+        }
+    }
+    out
 }

@@ -8,6 +8,7 @@
 - [Translators](./plugins/README.md)
   - [Installing translator plugins](./plugins/installing_plugins.md)
   - [Writing translator plugins](./plugins/writing_plugins.md)
+  - [Protocol decoders](./plugins/protocol-decoders.md)
   - [Instruction decoders](./plugins/instruction-decoders.md)
   - [Mapping translators](./plugins/mapping.md)
 - [Configuration](./configuration/README.md)
