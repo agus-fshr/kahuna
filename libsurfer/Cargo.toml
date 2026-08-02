@@ -116,3 +116,6 @@ image-compare.workspace = true
 port_check.workspace = true
 project-root.workspace = true
 test-log.workspace = true
+# remote::client's tests call tokio::runtime::Runtime::new(), which only exists
+# with rt-multi-thread. Without this no libsurfer lib test compiles at all.
+tokio = { workspace = true, features = ["rt-multi-thread"] }
