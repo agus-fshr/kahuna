@@ -5,17 +5,19 @@ into words, drawn as extra rows in the waveform view. This is what Kahuna means
 by "decoder"; for the single-signal, stateless kind see
 [instruction decoders](instruction-decoders).
 
-Supported protocols: **SPI**.
+Supported protocols: **SPI**, **I2C**, **UART**.
 
 ## Adding a decoder
 
 1. Add the bus's signals to the view. Grouping them first is convenient but not
    required.
-2. Right-click the group (or any of the signals) and pick **Decode as ▸ SPI**.
+2. Right-click the group (or any of the signals) and pick **Decode as ▸ SPI**
+   (or **I2C**, or **UART**).
 3. The settings dialog opens with the roles already filled in, guessed from the
    signal names. Correct anything it got wrong and close it.
 
-A row appears per data direction: `SPI MOSI` and `SPI MISO`. They behave like
+The rows that appear depend on the protocol: SPI produces `SPI MOSI` and
+`SPI MISO`, I2C produces `I2C Bus`, UART produces `UART Data`. They behave like
 any other row, so they can be renamed, recoloured, reordered and removed.
 Removing every row of a decoder removes the decoder.
 
@@ -23,6 +25,8 @@ From the command line:
 
 ```text
 decoder_add SPI
+decoder_add I2C
+decoder_add UART
 ```
 
 This binds against the selected items, or against everything displayed when
@@ -31,16 +35,51 @@ nothing is selected.
 ## Settings
 
 Reopen the dialog at any time with **Decoder settings...** in a decoder row's
-context menu.
+context menu. Roles marked `*` are required; set any role to `-` to unbind it.
+
+### SPI
 
 | Setting | Meaning |
 |---|---|
-| SCLK, MOSI, MISO, CS | Which signal fills each role. Only SCLK is required; set a role to `-` to leave it unbound. |
+| SCLK, MOSI, MISO, CS | Which signal fills each role. Only SCLK is required. |
 | Mode | SPI mode 0-3, i.e. the CPOL/CPHA pair. Mode 0 samples the rising edge with SCLK idling low. |
 | Bit order | Whether the first bit of a word is its most or least significant. |
 | Word size | Bits per word, 1 to 64. Not restricted to 8. |
 | Format | How decoded words are rendered: hexadecimal, decimal, binary or ASCII. |
 | Chip select | Whether CS asserts low or high. With CS unbound, every clock edge is decoded. |
+
+### I2C
+
+Both SCL and SDA are required. The output is a token stream rather than a flat
+run of bytes, because the framing is most of what makes an I2C trace readable:
+
+```text
+S    50 W    A    00    A    2A    A    P
+```
+
+`S` start, `Sr` repeated start, `P` stop, `A` acknowledge, `N` not acknowledged.
+
+| Setting | Meaning |
+|---|---|
+| Address | `7-bit + R/W` splits the address frame into an address and a direction; `Raw frame` shows the byte as it went over the wire. |
+| Format | How byte values are rendered. |
+
+### UART
+
+Decodes one line. A full-duplex link is two decoders, which is also how logic
+analysers model it: the two directions have independent framing and may even
+run at different rates.
+
+| Setting | Meaning |
+|---|---|
+| Line | The signal to decode. Required. |
+| Bit period | Length of one bit in timescale ticks. Leave **Measure** ticked to take it from the narrowest pulse on the line, which is correct whenever the traffic contains a bit differing from both its neighbours. |
+| Data bits | 5 to 9. |
+| Parity | None, even or odd. A mismatch is reported as `parity`. |
+| Stop bits | 1 or 2. Every stop bit must be at the idle level. |
+| Bit order | LSB first is conventional. |
+| Idle level | The level the line rests at. Set it low for an inverted line; the data bits invert with it. |
+| Format | ASCII by default, since serial traffic is usually text. |
 
 ## Reading the output
 

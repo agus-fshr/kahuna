@@ -224,8 +224,8 @@ Features added on top of upstream Surfer:
   - [x] Decoder framework (waveform -> decoded words)
   - [x] Rendering decoded words in the waveform view
   - [x] SPI (all four modes, configurable word size, bit order and CS polarity)
-  - [ ] I2C
-  - [ ] UART
+  - [x] I2C (start/stop/ack tokens, 7-bit addressing with direction)
+  - [x] UART (5-9 data bits, parity, measured or explicit bit rate)
 - [x] Renamed upstream's "decoders" to "instruction decoders", freeing the
       name for the above
 

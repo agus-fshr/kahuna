@@ -16,7 +16,9 @@ use serde::{Deserialize, Serialize};
 use crate::wave_container::VariableRef;
 
 pub mod dialog;
+pub mod i2c;
 pub mod spi;
+pub mod uart;
 
 /// A single signal's transitions, as `(time, bit)` pairs sorted by time.
 ///
@@ -160,16 +162,22 @@ impl WordFormat {
 pub enum Protocol {
     #[display("SPI")]
     Spi,
+    #[display("I2C")]
+    I2c,
+    #[display("UART")]
+    Uart,
 }
 
 impl Protocol {
-    pub const ALL: [Protocol; 1] = [Protocol::Spi];
+    pub const ALL: [Protocol; 3] = [Protocol::Spi, Protocol::I2c, Protocol::Uart];
 
     /// Signal roles this protocol binds, in the order they should be presented.
     #[must_use]
     pub const fn roles(self) -> &'static [Role] {
         match self {
             Protocol::Spi => spi::ROLES,
+            Protocol::I2c => i2c::ROLES,
+            Protocol::Uart => uart::ROLES,
         }
     }
 }
@@ -260,6 +268,8 @@ impl RoleBindings {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DecoderSettings {
     Spi(spi::SpiSettings),
+    I2c(i2c::I2cSettings),
+    Uart(uart::UartSettings),
 }
 
 impl DecoderSettings {
@@ -267,6 +277,8 @@ impl DecoderSettings {
     pub fn for_protocol(protocol: Protocol) -> Self {
         match protocol {
             Protocol::Spi => DecoderSettings::Spi(spi::SpiSettings::default()),
+            Protocol::I2c => DecoderSettings::I2c(i2c::I2cSettings::default()),
+            Protocol::Uart => DecoderSettings::Uart(uart::UartSettings::default()),
         }
     }
 
@@ -274,6 +286,8 @@ impl DecoderSettings {
     pub const fn protocol(&self) -> Protocol {
         match self {
             DecoderSettings::Spi(_) => Protocol::Spi,
+            DecoderSettings::I2c(_) => Protocol::I2c,
+            DecoderSettings::Uart(_) => Protocol::Uart,
         }
     }
 
@@ -283,6 +297,8 @@ impl DecoderSettings {
     pub fn decode(&self, lanes: &[Option<BitLane>]) -> Vec<DecodedLane> {
         match self {
             DecoderSettings::Spi(s) => s.decode(lanes),
+            DecoderSettings::I2c(s) => s.decode(lanes),
+            DecoderSettings::Uart(s) => s.decode(lanes),
         }
     }
 
@@ -292,6 +308,8 @@ impl DecoderSettings {
     pub fn lane_names(&self) -> Vec<String> {
         match self {
             DecoderSettings::Spi(s) => s.lane_names(),
+            DecoderSettings::I2c(s) => s.lane_names(),
+            DecoderSettings::Uart(s) => s.lane_names(),
         }
     }
 }

@@ -6,7 +6,12 @@
 
 use egui::{Align, ComboBox, Layout, RichText, Window};
 
-use super::{BitOrder, DecoderSettings, Protocol, RoleBindings, WordFormat, spi::SpiSettings};
+use super::{
+    BitOrder, DecoderSettings, Protocol, RoleBindings, WordFormat,
+    i2c::I2cSettings,
+    spi::SpiSettings,
+    uart::{Parity, UartSettings},
+};
 use crate::displayed_item::{DecoderInstance, DisplayedDecoder, DisplayedItem};
 use crate::message::Message;
 use crate::wave_container::{VariableRef, VariableRefExt};
@@ -44,6 +49,8 @@ pub fn draw(
             ui.separator();
             match &mut settings {
                 DecoderSettings::Spi(spi) => draw_spi_settings(ui, spi),
+                DecoderSettings::I2c(i2c) => draw_i2c_settings(ui, i2c),
+                DecoderSettings::Uart(uart) => draw_uart_settings(ui, uart),
             }
 
             let missing = bindings.missing(decoder.protocol());
@@ -140,6 +147,31 @@ fn draw_role_bindings(
         });
 }
 
+/// Word format picker, shared by every protocol that renders values.
+fn format_combo(ui: &mut egui::Ui, id: &str, format: &mut WordFormat) {
+    ComboBox::from_id_salt(id)
+        .selected_text(format.to_string())
+        .show_ui(ui, |ui| {
+            for f in WordFormat::ALL {
+                if ui.selectable_label(*format == f, f.to_string()).clicked() {
+                    *format = f;
+                }
+            }
+        });
+}
+
+fn bit_order_combo(ui: &mut egui::Ui, id: &str, order: &mut BitOrder) {
+    ComboBox::from_id_salt(id)
+        .selected_text(order.to_string())
+        .show_ui(ui, |ui| {
+            for o in BitOrder::ALL {
+                if ui.selectable_label(*order == o, o.to_string()).clicked() {
+                    *order = o;
+                }
+            }
+        });
+}
+
 fn draw_spi_settings(ui: &mut egui::Ui, spi: &mut SpiSettings) {
     egui::Grid::new("spi_settings")
         .num_columns(2)
@@ -167,18 +199,7 @@ fn draw_spi_settings(ui: &mut egui::Ui, spi: &mut SpiSettings) {
             ui.end_row();
 
             ui.label("Bit order");
-            ComboBox::from_id_salt("spi_bit_order")
-                .selected_text(spi.bit_order.to_string())
-                .show_ui(ui, |ui| {
-                    for o in BitOrder::ALL {
-                        if ui
-                            .selectable_label(spi.bit_order == o, o.to_string())
-                            .clicked()
-                        {
-                            spi.bit_order = o;
-                        }
-                    }
-                });
+            bit_order_combo(ui, "spi_bit_order", &mut spi.bit_order);
             ui.end_row();
 
             ui.label("Word size");
@@ -186,18 +207,7 @@ fn draw_spi_settings(ui: &mut egui::Ui, spi: &mut SpiSettings) {
             ui.end_row();
 
             ui.label("Format");
-            ComboBox::from_id_salt("spi_format")
-                .selected_text(spi.format.to_string())
-                .show_ui(ui, |ui| {
-                    for f in WordFormat::ALL {
-                        if ui
-                            .selectable_label(spi.format == f, f.to_string())
-                            .clicked()
-                        {
-                            spi.format = f;
-                        }
-                    }
-                });
+            format_combo(ui, "spi_format", &mut spi.format);
             ui.end_row();
 
             ui.label("Chip select");
@@ -221,6 +231,111 @@ fn draw_spi_settings(ui: &mut egui::Ui, spi: &mut SpiSettings) {
                         spi.cs_active_low = false;
                     }
                 });
+            ui.end_row();
+        });
+}
+
+fn draw_i2c_settings(ui: &mut egui::Ui, i2c: &mut I2cSettings) {
+    egui::Grid::new("i2c_settings")
+        .num_columns(2)
+        .spacing([12.0, 4.0])
+        .show(ui, |ui| {
+            ui.label("Address");
+            ComboBox::from_id_salt("i2c_address")
+                .selected_text(if i2c.split_address {
+                    "7-bit + R/W"
+                } else {
+                    "Raw frame"
+                })
+                .show_ui(ui, |ui| {
+                    if ui
+                        .selectable_label(i2c.split_address, "7-bit + R/W")
+                        .clicked()
+                    {
+                        i2c.split_address = true;
+                    }
+                    if ui
+                        .selectable_label(!i2c.split_address, "Raw frame")
+                        .clicked()
+                    {
+                        i2c.split_address = false;
+                    }
+                });
+            ui.end_row();
+
+            ui.label("Format");
+            format_combo(ui, "i2c_format", &mut i2c.format);
+            ui.end_row();
+        });
+}
+
+fn draw_uart_settings(ui: &mut egui::Ui, uart: &mut UartSettings) {
+    egui::Grid::new("uart_settings")
+        .num_columns(2)
+        .spacing([12.0, 4.0])
+        .show(ui, |ui| {
+            ui.label("Bit period");
+            ui.horizontal(|ui| {
+                let mut automatic = uart.bit_period.is_none();
+                if ui.checkbox(&mut automatic, "Measure").changed() {
+                    // Seed the manual value with whatever was measured, so
+                    // switching to manual does not jump to an arbitrary number.
+                    uart.bit_period = if automatic { None } else { Some(1000) };
+                }
+                if let Some(period) = &mut uart.bit_period {
+                    ui.add(
+                        egui::DragValue::new(period)
+                            .range(1..=u64::MAX)
+                            .suffix(" ticks"),
+                    );
+                } else {
+                    ui.label("from narrowest pulse");
+                }
+            });
+            ui.end_row();
+
+            ui.label("Data bits");
+            ui.add(egui::DragValue::new(&mut uart.data_bits).range(5..=9));
+            ui.end_row();
+
+            ui.label("Parity");
+            ComboBox::from_id_salt("uart_parity")
+                .selected_text(uart.parity.to_string())
+                .show_ui(ui, |ui| {
+                    for p in Parity::ALL {
+                        if ui
+                            .selectable_label(uart.parity == p, p.to_string())
+                            .clicked()
+                        {
+                            uart.parity = p;
+                        }
+                    }
+                });
+            ui.end_row();
+
+            ui.label("Stop bits");
+            ui.add(egui::DragValue::new(&mut uart.stop_bits).range(1..=2));
+            ui.end_row();
+
+            ui.label("Bit order");
+            bit_order_combo(ui, "uart_bit_order", &mut uart.bit_order);
+            ui.end_row();
+
+            ui.label("Idle level");
+            ComboBox::from_id_salt("uart_idle")
+                .selected_text(if uart.idle_high { "High" } else { "Low" })
+                .show_ui(ui, |ui| {
+                    if ui.selectable_label(uart.idle_high, "High").clicked() {
+                        uart.idle_high = true;
+                    }
+                    if ui.selectable_label(!uart.idle_high, "Low").clicked() {
+                        uart.idle_high = false;
+                    }
+                });
+            ui.end_row();
+
+            ui.label("Format");
+            format_combo(ui, "uart_format", &mut uart.format);
             ui.end_row();
         });
 }
