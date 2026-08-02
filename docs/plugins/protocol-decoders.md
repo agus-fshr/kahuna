@@ -116,6 +116,14 @@ color, so a bad word stands out from the good ones around it.
 If a required role is unbound the rows stay empty, and the dialog says which
 role is missing rather than failing silently.
 
+## Performance
+
+A decode result is cached and reused, so panning and zooming rebuild only the
+on-screen blocks rather than re-reading the bound signals. The cached result is
+discarded when the settings or role bindings change, when the waveform is
+reloaded, or when a bound signal finishes loading, since a decode that ran
+before its inputs existed would otherwise stay empty forever.
+
 ## Adding another protocol
 
 Each protocol is a module beside `spi.rs` in `libsurfer/src/decoders/`, plus a

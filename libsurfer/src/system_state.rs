@@ -90,6 +90,10 @@ pub struct SystemState {
     pub(crate) draw_data: RefCell<Vec<Option<CachedDrawData>>>,
 
     pub(crate) variable_name_info_cache: RefCell<HashMap<VariableRef, Option<VariableNameInfo>>>,
+    /// Decoded protocol words, kept so that panning and zooming redraw from the
+    /// existing result instead of re-reading every bound signal.
+    pub(crate) decoder_cache:
+        RefCell<HashMap<crate::displayed_item::DecoderInstance, crate::decoders::CachedDecode>>,
 
     /// Monotonically increasing counter incremented when translators reload, to invalidate
     /// the `all_variable_rows_cache` when name info changes without a waveform reload.
@@ -202,6 +206,7 @@ impl SystemState {
             command_prompt_text: RefCell::new(String::new()),
             draw_data: RefCell::new(vec![None]),
             variable_name_info_cache: RefCell::new(HashMap::new()),
+            decoder_cache: RefCell::new(HashMap::new()),
             translator_generation: 0,
             all_variable_rows_cache: None,
             last_canvas_rect: RefCell::new(None),

@@ -264,6 +264,38 @@ impl RoleBindings {
     }
 }
 
+/// Everything a decode result depends on.
+///
+/// A cached result stays valid exactly while this compares equal, so anything
+/// that can change the output has to be represented here.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DecodeKey {
+    /// Bumped when a waveform is reloaded, so results from the previous file
+    /// are never reused for the new one.
+    pub generation: u64,
+    pub settings: DecoderSettings,
+    pub bindings: RoleBindings,
+    /// Whether each bound signal had data available when the decode ran.
+    ///
+    /// Signals load asynchronously, so a decode can legitimately run before its
+    /// inputs exist and produce nothing. Without this the empty result would be
+    /// cached and the row would stay blank forever.
+    pub loaded: Vec<bool>,
+}
+
+/// A decode result together with the inputs it was produced from.
+pub struct CachedDecode {
+    pub key: DecodeKey,
+    pub lanes: Vec<DecodedLane>,
+}
+
+impl CachedDecode {
+    #[must_use]
+    pub fn is_valid_for(&self, key: &DecodeKey) -> bool {
+        self.key == *key
+    }
+}
+
 /// Per-protocol decoder settings.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DecoderSettings {
@@ -326,6 +358,79 @@ mod tests {
                 .map(|&(t, v)| (t, if v == 0 { Bit::Zero } else { Bit::One }))
                 .collect(),
         )
+    }
+
+    fn cache_key() -> DecodeKey {
+        DecodeKey {
+            generation: 1,
+            settings: DecoderSettings::for_protocol(Protocol::Spi),
+            bindings: RoleBindings {
+                signals: vec![None; Protocol::Spi.roles().len()],
+            },
+            loaded: vec![true; Protocol::Spi.roles().len()],
+        }
+    }
+
+    fn cached() -> CachedDecode {
+        CachedDecode {
+            key: cache_key(),
+            lanes: vec![],
+        }
+    }
+
+    #[test]
+    fn a_cached_decode_is_reused_for_an_identical_key() {
+        assert!(cached().is_valid_for(&cache_key()));
+    }
+
+    #[test]
+    fn reloading_the_waveform_invalidates_the_cache() {
+        let key = DecodeKey {
+            generation: 2,
+            ..cache_key()
+        };
+        assert!(!cached().is_valid_for(&key));
+    }
+
+    #[test]
+    fn changing_settings_invalidates_the_cache() {
+        let mut settings = spi::SpiSettings::default();
+        settings.word_size = 4;
+        let key = DecodeKey {
+            settings: DecoderSettings::Spi(settings),
+            ..cache_key()
+        };
+        assert!(!cached().is_valid_for(&key));
+    }
+
+    #[test]
+    fn rebinding_a_role_invalidates_the_cache() {
+        let mut bindings = cache_key().bindings;
+        bindings.signals[spi::SCLK] = Some(VariableRef::from_hierarchy_string("tb.spi.sclk"));
+        let key = DecodeKey {
+            bindings,
+            ..cache_key()
+        };
+        assert!(!cached().is_valid_for(&key));
+    }
+
+    #[test]
+    fn a_signal_finishing_loading_invalidates_the_cache() {
+        // Signals load asynchronously, so a decode can run before its inputs
+        // exist. Caching that empty result forever would leave the row blank.
+        let mut loaded = cache_key().loaded;
+        loaded[spi::SCLK] = false;
+        let stale = CachedDecode {
+            key: DecodeKey {
+                loaded,
+                ..cache_key()
+            },
+            lanes: vec![],
+        };
+        assert!(
+            !stale.is_valid_for(&cache_key()),
+            "a decode made without data must not survive the data arriving"
+        );
     }
 
     #[test]

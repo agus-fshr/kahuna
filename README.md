@@ -226,6 +226,7 @@ Features added on top of upstream Surfer:
   - [x] SPI (all four modes, configurable word size, bit order and CS polarity)
   - [x] I2C (start/stop/ack tokens, 7-bit addressing with direction)
   - [x] UART (5-9 data bits, parity, measured or explicit bit rate)
+  - [x] Decode results cached across pan and zoom
 - [x] Renamed upstream's "decoders" to "instruction decoders", freeing the
       name for the above
 
