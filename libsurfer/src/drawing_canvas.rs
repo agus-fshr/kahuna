@@ -23,6 +23,13 @@ use crate::clock_highlighting::draw_clock_edge_marks;
 use crate::config::{FocusHighlight, SurferTheme};
 use crate::data_container::DataContainer;
 use crate::decoders::{Bit, BitLane, WordKind};
+
+/// How solidly a decoded word's block is filled. High enough that the row reads
+/// as a filled band rather than as a trace.
+const DECODED_FILL_OPACITY: f32 = 0.55;
+
+/// Horizontal gap on each side of a decoded word's block, in pixels.
+const DECODED_WORD_GAP: f32 = 1.0;
 use crate::displayed_item::{
     AnalogSettings, DisplayedFieldRef, DisplayedItemRef, DisplayedVariable,
 };
@@ -1044,6 +1051,9 @@ impl SystemState {
     ) {
         let clock_edges = &draw_data.clock_edges;
         let draw_commands = &draw_data.draw_commands;
+        // Computed once per frame rather than per row: every decoded row would
+        // otherwise rescan all items.
+        let decoder_sources = waves.decoder_source_signals();
         let draw_clock_edges = clock_edges.has_edges();
         let draw_clock_rising_marker =
             draw_clock_edges && self.user.config.theme.clock_rising_marker;
@@ -1072,7 +1082,20 @@ impl SystemState {
                 .and_then(|node| waves.displayed_items.get(&node.item_ref));
             let color = displayed_item
                 .and_then(super::displayed_item::DisplayedItem::color)
-                .and_then(|color| self.user.config.theme.get_color(color));
+                .and_then(|color| self.user.config.theme.get_color(color))
+                .or_else(|| {
+                    // Tint a signal that feeds a decoder, unless the user chose
+                    // a color for it: an explicit choice always wins.
+                    match displayed_item {
+                        Some(DisplayedItem::Variable(v))
+                            if decoder_sources.contains(&v.variable_ref) =>
+                        {
+                            Some(self.user.config.theme.decoder_source)
+                        }
+                        _ => None,
+                    }
+                });
+            let is_decoded_row = matches!(displayed_item, Some(DisplayedItem::Decoder(_)));
 
             match drawing_info {
                 ItemDrawingInfo::Variable(VariableDrawingInfo {
@@ -1105,6 +1128,9 @@ impl SystemState {
                         };
 
                         let color = color.unwrap_or_else(|| {
+                            if is_decoded_row {
+                                return self.user.config.theme.decoder_value;
+                            }
                             if let Some(DisplayedItem::Variable(variable)) = displayed_item {
                                 waves
                                     .inner
@@ -1192,16 +1218,26 @@ impl SystemState {
                                             .iter()
                                             .zip(digital_commands.values.iter().skip(1))
                                         {
-                                            self.draw_region(
-                                                (old, new),
-                                                color,
-                                                y_offset,
-                                                height_scaling_factor,
-                                                ctx,
-                                                text_color,
-                                                line_width,
-                                                brightness_shift,
-                                            );
+                                            if is_decoded_row {
+                                                self.draw_decoded_region(
+                                                    (old, new),
+                                                    color,
+                                                    y_offset,
+                                                    ctx,
+                                                    text_color,
+                                                );
+                                            } else {
+                                                self.draw_region(
+                                                    (old, new),
+                                                    color,
+                                                    y_offset,
+                                                    height_scaling_factor,
+                                                    ctx,
+                                                    text_color,
+                                                    line_width,
+                                                    brightness_shift,
+                                                );
+                                            }
                                         }
                                     }
                                 }
@@ -2085,4 +2121,74 @@ fn decoder_draw_commands(
         }
     }
     out
+}
+
+impl SystemState {
+    /// Draw one decoded word.
+    ///
+    /// Deliberately unlike [`Self::draw_region`]: a filled block with rounded
+    /// corners and no trace outline, rather than the outlined hexagon used for
+    /// bus values. The shape alone, before any color is considered, says that
+    /// this row is an interpretation of other signals rather than a captured
+    /// waveform.
+    #[allow(clippy::too_many_arguments)]
+    fn draw_decoded_region(
+        &self,
+        ((old_x, prev_region), (new_x, _)): (&(f32, DrawnRegion), &(f32, DrawnRegion)),
+        user_color: Color32,
+        offset: f32,
+        ctx: &mut DrawingContext,
+        text_color: Color32,
+    ) {
+        let Some(prev_result) = &prev_region.inner else {
+            // A gap between words: nothing is drawn, which reads as "the bus was
+            // idle here" rather than as a value that happens to be blank.
+            return;
+        };
+
+        let color = prev_result.kind.color(user_color, ctx.theme);
+        let coords = |x: f32, y: f32| (ctx.to_screen)(x, y.mul_add(ctx.cfg.line_height, offset));
+
+        // Inset vertically so the block never touches the row above or below,
+        // and horizontally so consecutive words read as separate blocks. Words
+        // are contiguous in time, so without the gap a run of them merges into
+        // one band and the boundaries become invisible.
+        let gap = (DECODED_WORD_GAP).min((new_x - old_x) * 0.25);
+        let rect = Rect::from_two_pos(coords(old_x + gap, 0.12), coords(new_x - gap, 0.88));
+        if rect.width() < 1.0 {
+            return;
+        }
+
+        ctx.painter.rect_filled(
+            rect,
+            CornerRadius::same(2),
+            color.gamma_multiply(DECODED_FILL_OPACITY),
+        );
+
+        let text_size = ctx.cfg.text_size;
+        let char_width = text_size * (20. / 31.);
+        let num_chars = (rect.width() / char_width).floor() as usize;
+        if num_chars == 0 {
+            return;
+        }
+
+        let content = if prev_result.value.len() > num_chars {
+            prev_result
+                .value
+                .chars()
+                .take(num_chars.saturating_sub(1))
+                .chain(['…'])
+                .collect::<String>()
+        } else {
+            prev_result.value.clone()
+        };
+
+        ctx.painter.text(
+            rect.center(),
+            Align2::CENTER_CENTER,
+            content,
+            FontId::monospace(text_size),
+            text_color,
+        );
+    }
 }

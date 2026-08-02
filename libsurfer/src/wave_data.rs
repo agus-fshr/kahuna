@@ -699,6 +699,26 @@ impl WaveData {
         }
     }
 
+    /// Signals that some decoder currently reads.
+    ///
+    /// Used to tint those waveforms, so it is visible which rows feed a decoded
+    /// row rather than the connection being invisible.
+    #[must_use]
+    pub fn decoder_source_signals(&self) -> Vec<VariableRef> {
+        let mut out: Vec<VariableRef> = self
+            .displayed_items
+            .values()
+            .filter_map(|item| match item {
+                DisplayedItem::Decoder(d) => Some(d.bindings.signals.iter().flatten().cloned()),
+                _ => None,
+            })
+            .flatten()
+            .collect();
+        out.sort_by_key(VariableRef::full_path_string);
+        out.dedup();
+        out
+    }
+
     /// Signals referenced by `items`, in tree order.
     ///
     /// Naming a group contributes the variables inside it, since marking a

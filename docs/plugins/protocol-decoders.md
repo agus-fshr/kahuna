@@ -44,6 +44,21 @@ context menu.
 
 ## Reading the output
 
+A decoded row is not a waveform, and is drawn so that this is obvious at a
+glance rather than only from its name:
+
+* **Decoded words** are filled blocks with rounded corners and no trace
+  outline, in a violet that no waveform uses (`decoder_value`). Waveforms are
+  outlined shapes; decoded words are filled ones. Consecutive words are
+  separated by a small gap so a run of them does not merge into one band.
+* **Source signals** that a decoder reads are tinted amber (`decoder_source`)
+  wherever they are displayed, so it is visible which waveforms feed a decoded
+  row. Setting a color on a signal yourself always wins over this tint.
+* **Row names** of decoded rows are italic, as dividers are.
+
+Both colors are theme settings and can be overridden in a theme file. Themes
+written before decoders existed keep working and fall back to the defaults.
+
 Words are drawn as blocks spanning from the clock edge that latched their first
 bit to the start of the next word.
 
@@ -55,6 +70,9 @@ Blocks drawn as errors mean the decoder could not trust that word:
 * `x` — an `x` or `z` was sampled on the data line. Only that word is affected;
   the ones after it still decode, because the bad bit still occupies its slot
   and the framing survives.
+
+Error blocks are drawn in the theme's warning color rather than the decoder
+color, so a bad word stands out from the good ones around it.
 
 If a required role is unbound the rows stay empty, and the dialog says which
 role is missing rather than failing silently.

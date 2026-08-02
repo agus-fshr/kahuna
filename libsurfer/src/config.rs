@@ -587,6 +587,20 @@ pub struct SurferTheme {
     #[serde(deserialize_with = "deserialize_hex_color")]
     /// Color used for constant variables (parameters)
     pub variable_event: Color32,
+    /// Color used for signals a protocol decoder reads, so it is visible which
+    /// waveforms feed a decoded row.
+    #[serde(
+        default = "default_decoder_source",
+        deserialize_with = "deserialize_hex_color"
+    )]
+    pub decoder_source: Color32,
+    /// Color used for decoded protocol words. Deliberately unlike the signal
+    /// colors: a decoded row is an interpretation, not measured data.
+    #[serde(
+        default = "default_decoder_value",
+        deserialize_with = "deserialize_hex_color"
+    )]
+    pub decoder_value: Color32,
 
     /// Opacity with which variable backgrounds are drawn. 0 is fully transparent and 1 is fully
     /// opaque.
@@ -1247,6 +1261,17 @@ fn all_theme_names() -> Vec<String> {
     let mut names: Vec<String> = BUILTIN_THEMES.keys().map(ToString::to_string).collect();
     names.sort();
     names
+}
+
+/// Amber, distinct from the greens used for ordinary signals.
+fn default_decoder_source() -> Color32 {
+    Color32::from_rgb(0xE5, 0xA6, 0x63)
+}
+
+/// Muted violet. No waveform is drawn in this hue, so a decoded row cannot be
+/// mistaken for a captured one.
+fn default_decoder_value() -> Color32 {
+    Color32::from_rgb(0xB4, 0x8E, 0xAD)
 }
 
 fn deserialize_hex_color<'de, D>(deserializer: D) -> Result<Color32, D::Error>

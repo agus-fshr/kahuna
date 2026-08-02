@@ -541,8 +541,11 @@ impl DisplayedItem {
                 group.rich_text(color, style, layout_job);
             }
             DisplayedItem::Decoder(_) => {
+                // Italic, as dividers are, so the name column also shows that
+                // this row is derived rather than a signal from the file.
                 RichText::new(self.name())
                     .color(color)
+                    .italics()
                     .line_height(Some(config.layout.waveforms_line_height))
                     .append_to(layout_job, style, FontSelection::Default, Align::Center);
             }
