@@ -18,6 +18,7 @@ pub mod config;
 pub mod cxxrtl;
 pub mod cxxrtl_container;
 pub mod data_container;
+pub mod decoders;
 pub mod dialog;
 pub mod displayed_item;
 pub mod displayed_item_tree;
